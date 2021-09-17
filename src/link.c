@@ -2,10 +2,22 @@
 /* Copyright (C) 2020 Facebook */
 
 #include <errno.h>
+#ifdef _WIN32
+#include <io.h>
+#include "ebpf_structs.h"
+#endif
 #include <linux/err.h>
+#ifdef __linux__
 #include <net/if.h>
+#endif
 #include <stdio.h>
+#ifdef _WIN32
+#include <stdlib.h>
+#endif
+#ifdef __linux__
 #include <unistd.h>
+#define HAVE_OBJ_REFS_SUPPORT
+#endif
 
 #include <bpf/bpf.h>
 #include <bpf/hashmap.h>
@@ -83,6 +95,7 @@ static bool is_iter_map_target(const char *target_name)
 	       strcmp(target_name, "bpf_sk_storage_map") == 0;
 }
 
+#ifdef BPF_LINK_TYPE_ITER
 static void show_iter_json(struct bpf_link_info *info, json_writer_t *wtr)
 {
 	const char *target_name = u64_to_ptr(info->iter.target_name);
@@ -92,6 +105,7 @@ static void show_iter_json(struct bpf_link_info *info, json_writer_t *wtr)
 	if (is_iter_map_target(target_name))
 		jsonw_uint_field(wtr, "map_id", info->iter.map.map_id);
 }
+#endif
 
 static int get_prog_info(int prog_id, struct bpf_prog_info *info)
 {
@@ -121,10 +135,13 @@ static int show_link_close_json(int fd, struct bpf_link_info *info)
 	show_link_header_json(info, json_wtr);
 
 	switch (info->type) {
+#ifdef BPF_LINK_TYPE_RAW_TRACEPOINT
 	case BPF_LINK_TYPE_RAW_TRACEPOINT:
 		jsonw_string_field(json_wtr, "tp_name",
 				   u64_to_ptr(info->raw_tracepoint.tp_name));
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_TRACING
 	case BPF_LINK_TYPE_TRACING:
 		err = get_prog_info(info->prog_id, &prog_info);
 		if (err)
@@ -140,19 +157,31 @@ static int show_link_close_json(int fd, struct bpf_link_info *info)
 		show_link_attach_type_json(info->tracing.attach_type,
 					   json_wtr);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_CGROUP
 	case BPF_LINK_TYPE_CGROUP:
 		jsonw_lluint_field(json_wtr, "cgroup_id",
 				   info->cgroup.cgroup_id);
 		show_link_attach_type_json(info->cgroup.attach_type, json_wtr);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_ITER
 	case BPF_LINK_TYPE_ITER:
 		show_iter_json(info, json_wtr);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_NETNS
 	case BPF_LINK_TYPE_NETNS:
 		jsonw_uint_field(json_wtr, "netns_ino",
 				 info->netns.netns_ino);
 		show_link_attach_type_json(info->netns.attach_type, json_wtr);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_PLAIN
+        case BPF_LINK_TYPE_PLAIN:
+            show_link_attach_type_json(info->plain.attach_type, json_wtr);
+            break;
+#endif
 	default:
 		break;
 	}
@@ -168,7 +197,9 @@ static int show_link_close_json(int fd, struct bpf_link_info *info)
 		jsonw_end_array(json_wtr);
 	}
 
+#ifdef HAVE_OBJ_REFS_SUPPORT
 	emit_obj_refs_json(refs_table, info->id, json_wtr);
+#endif
 
 	jsonw_end_object(json_wtr);
 
@@ -184,7 +215,7 @@ static void show_link_header_plain(struct bpf_link_info *info)
 	if (link_type_str)
 		printf("%s  ", link_type_str);
 	else
-		printf("type %u  ", info->type);
+		printf("type %d  ", info->type);
 
 	printf("prog %u  ", info->prog_id);
 }
@@ -200,6 +231,7 @@ static void show_link_attach_type_plain(__u32 attach_type)
 		printf("attach_type %u  ", attach_type);
 }
 
+#ifdef BPF_LINK_TYPE_ITER
 static void show_iter_plain(struct bpf_link_info *info)
 {
 	const char *target_name = u64_to_ptr(info->iter.target_name);
@@ -209,6 +241,7 @@ static void show_iter_plain(struct bpf_link_info *info)
 	if (is_iter_map_target(target_name))
 		printf("map_id %u  ", info->iter.map.map_id);
 }
+#endif
 
 static int show_link_close_plain(int fd, struct bpf_link_info *info)
 {
@@ -219,10 +252,13 @@ static int show_link_close_plain(int fd, struct bpf_link_info *info)
 	show_link_header_plain(info);
 
 	switch (info->type) {
+#ifdef BPF_LINK_TYPE_RAW_TRACEPOINT
 	case BPF_LINK_TYPE_RAW_TRACEPOINT:
 		printf("\n\ttp '%s'  ",
 		       (const char *)u64_to_ptr(info->raw_tracepoint.tp_name));
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_TRACING
 	case BPF_LINK_TYPE_TRACING:
 		err = get_prog_info(info->prog_id, &prog_info);
 		if (err)
@@ -237,17 +273,29 @@ static int show_link_close_plain(int fd, struct bpf_link_info *info)
 
 		show_link_attach_type_plain(info->tracing.attach_type);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_CGROUP
 	case BPF_LINK_TYPE_CGROUP:
 		printf("\n\tcgroup_id %zu  ", (size_t)info->cgroup.cgroup_id);
 		show_link_attach_type_plain(info->cgroup.attach_type);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_ITER
 	case BPF_LINK_TYPE_ITER:
 		show_iter_plain(info);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_NETNS
 	case BPF_LINK_TYPE_NETNS:
 		printf("\n\tnetns_ino %u  ", info->netns.netns_ino);
 		show_link_attach_type_plain(info->netns.attach_type);
 		break;
+#endif
+#ifdef BPF_LINK_TYPE_PLAIN
+        case BPF_LINK_TYPE_PLAIN:
+            show_link_attach_type_plain(info->plain.attach_type);
+            break;
+#endif
 	default:
 		break;
 	}
@@ -259,7 +307,9 @@ static int show_link_close_plain(int fd, struct bpf_link_info *info)
 					    u32_as_hash_field(info->id))
 			printf("\n\tpinned %s", (char *)entry->value);
 	}
+#ifdef HAVE_OBJ_REFS_SUPPORT
 	emit_obj_refs_plain(refs_table, info->id, "\n\tpids ");
+#endif
 
 	printf("\n");
 
@@ -282,18 +332,22 @@ again:
 		close(fd);
 		return err;
 	}
+#ifdef BPF_LINK_TYPE_RAW_TRACEPOINT
 	if (info.type == BPF_LINK_TYPE_RAW_TRACEPOINT &&
 	    !info.raw_tracepoint.tp_name) {
 		info.raw_tracepoint.tp_name = (unsigned long)&buf;
 		info.raw_tracepoint.tp_name_len = sizeof(buf);
 		goto again;
 	}
+#endif
+#ifdef BPF_LINK_TYPE_ITER
 	if (info.type == BPF_LINK_TYPE_ITER &&
 	    !info.iter.target_name) {
 		info.iter.target_name = (unsigned long)&buf;
 		info.iter.target_name_len = sizeof(buf);
 		goto again;
 	}
+#endif
 
 	if (json_output)
 		show_link_close_json(fd, &info);
@@ -317,8 +371,10 @@ static int do_show(int argc, char **argv)
 			return -1;
 		}
 		build_pinned_obj_table(link_table, BPF_OBJ_LINK);
-	}
+    }
+#ifdef HAVE_OBJ_REFS_SUPPORT
 	build_obj_refs_table(&refs_table, BPF_OBJ_LINK);
+#endif
 
 	if (argc == 2) {
 		fd = link_parse_fd(&argc, &argv);
@@ -358,7 +414,9 @@ static int do_show(int argc, char **argv)
 	if (json_output)
 		jsonw_end_array(json_wtr);
 
+#ifdef HAVE_OBJ_REFS_SUPPORT
 	delete_obj_refs_table(refs_table);
+#endif
 
 	if (show_pinned)
 		delete_pinned_obj_table(link_table);
@@ -419,7 +477,9 @@ static int do_help(int argc, char **argv)
 		"\n"
 		"       " HELP_SPEC_LINK "\n"
 		"       " HELP_SPEC_OPTIONS " |\n"
+#ifdef HAVE_BPFFS_SUPPORT
 		"                    {-f|--bpffs} | {-n|--nomount} }\n"
+#endif
 		"",
 		bin_name, argv[-2]);
 

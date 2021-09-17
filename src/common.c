@@ -5,19 +5,29 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef __linux__
 #include <ftw.h>
 #include <libgen.h>
 #include <mntent.h>
+#endif
+#ifdef _WIN32
+#include <io.h>
+#include <windows.h>
+#endif
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __linux__
 #include <unistd.h>
 #include <net/if.h>
 #include <sys/mount.h>
 #include <sys/resource.h>
+#endif
 #include <sys/stat.h>
+#ifdef __linux__
 #include <sys/vfs.h>
+#endif
 
 #include <linux/filter.h>
 #include <linux/limits.h>
@@ -27,9 +37,20 @@
 #include <bpf/bpf.h>
 #include <bpf/hashmap.h>
 #include <bpf/libbpf.h> /* libbpf_num_possible_cpus */
+#ifdef HAVE_BTF_SUPPORT
 #include <bpf/btf.h>
+#endif
 
 #include "main.h"
+#ifdef _WIN32
+char*
+dirname(char* path)
+{
+    static char dir[_MAX_DIR];
+    _splitpath(path, NULL, dir, NULL, NULL);
+    return dir;
+}
+#endif
 
 #ifndef BPF_FS_MAGIC
 #define BPF_FS_MAGIC		0xcafe4a11
@@ -66,6 +87,7 @@ void p_info(const char *fmt, ...)
 	va_end(ap);
 }
 
+#ifdef HAVE_BPFFS_SUPPORT
 static bool is_bpffs(char *path)
 {
 	struct statfs st_fs;
@@ -75,7 +97,9 @@ static bool is_bpffs(char *path)
 
 	return (unsigned long)st_fs.f_type == BPF_FS_MAGIC;
 }
+#endif
 
+#ifdef __linux__
 /* Probe whether kernel switched from memlock-based (RLIMIT_MEMLOCK) to
  * memcg-based memory accounting for BPF maps and programs. This was done in
  * commit 97306be45fbe ("Merge branch 'switch to memcg-based memory
@@ -190,6 +214,7 @@ int mount_tracefs(const char *target)
 
 	return err;
 }
+#endif // __linux__
 
 int open_obj_pinned(const char *path, bool quiet)
 {
@@ -207,7 +232,11 @@ int open_obj_pinned(const char *path, bool quiet)
 	if (fd < 0) {
 		if (!quiet)
 			p_err("bpf obj get (%s): %s", pname,
-			      errno == EACCES && !is_bpffs(dirname(pname)) ?
+			      errno == EACCES
+#ifdef HAVE_BPFFS_SUPPORT
+				&& !is_bpffs(dirname(pname))
+#endif
+				?
 			    "directory not in bpf file system (bpffs)" :
 			    strerror(errno));
 		goto out_free;
@@ -242,6 +271,7 @@ int open_obj_pinned_any(const char *path, enum bpf_obj_type exp_type)
 	return fd;
 }
 
+#ifdef HAVE_BPFFS_SUPPORT
 int mount_bpffs_for_pin(const char *name)
 {
 	char err_str[ERR_MAX_LEN];
@@ -279,14 +309,17 @@ out_free:
 	free(file);
 	return err;
 }
+#endif
 
 int do_pin_fd(int fd, const char *name)
 {
 	int err;
 
+#ifdef HAVE_BPFFS_SUPPORT
 	err = mount_bpffs_for_pin(name);
 	if (err)
 		return err;
+#endif
 
 	err = bpf_obj_pin(fd, name);
 	if (err)
@@ -325,13 +358,14 @@ const char *get_fd_type_name(enum bpf_obj_type type)
 	return names[type];
 }
 
+#ifdef HAVE_BTF_SUPPORT
 void get_prog_full_name(const struct bpf_prog_info *prog_info, int prog_fd,
 			char *name_buff, size_t buff_len)
 {
 	const char *prog_name = prog_info->name;
 	const struct btf_type *func_type;
-	const struct bpf_func_info finfo = {};
-	struct bpf_prog_info info = {};
+	const struct bpf_func_info finfo = {0};
+	struct bpf_prog_info info = {0};
 	__u32 info_len = sizeof(info);
 	struct btf *prog_btf = NULL;
 
@@ -367,9 +401,11 @@ copy_name:
 	if (prog_btf)
 		btf__free(prog_btf);
 }
+#endif
 
 int get_fd_type(int fd)
 {
+#ifdef __linux__
 	char path[PATH_MAX];
 	char buf[512];
 	ssize_t n;
@@ -392,10 +428,12 @@ int get_fd_type(int fd)
 		return BPF_OBJ_PROG;
 	else if (strstr(buf, "bpf-link"))
 		return BPF_OBJ_LINK;
+#endif
 
 	return BPF_OBJ_UNKNOWN;
 }
 
+#ifdef __linux__
 char *get_fdinfo(int fd, const char *key)
 {
 	char path[PATH_MAX];
@@ -437,6 +475,7 @@ char *get_fdinfo(int fd, const char *key)
 	fclose(fdi);
 	return NULL;
 }
+#endif
 
 void print_data_json(uint8_t *data, size_t len)
 {
@@ -471,8 +510,10 @@ static int do_build_table_cb(const char *fpath, const struct stat *sb,
 	int fd, err = 0;
 	char *path;
 
+#ifdef FTW_F
 	if (typeflag != FTW_F)
 		goto out_ret;
+#endif
 
 	fd = open_obj_pinned(fpath, true);
 	if (fd < 0)
@@ -508,12 +549,15 @@ out_ret:
 int build_pinned_obj_table(struct hashmap *tab,
 			   enum bpf_obj_type type)
 {
+#ifdef FTW_PHYS
 	struct mntent *mntent = NULL;
 	FILE *mntfile = NULL;
 	int flags = FTW_PHYS;
 	int nopenfd = 16;
+#endif
 	int err = 0;
 
+#ifdef __linux__
 	mntfile = setmntent("/proc/mounts", "r");
 	if (!mntfile)
 		return -1;
@@ -531,6 +575,7 @@ int build_pinned_obj_table(struct hashmap *tab,
 			break;
 	}
 	fclose(mntfile);
+#endif
 	return err;
 }
 
@@ -547,6 +592,15 @@ void delete_pinned_obj_table(struct hashmap *map)
 
 	hashmap__free(map);
 }
+
+#ifdef _WIN32
+int getpagesize(void)
+{
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    return info.dwPageSize;
+}
+#endif
 
 unsigned int get_page_size(void)
 {
@@ -568,6 +622,7 @@ unsigned int get_possible_cpus(void)
 	return cpus;
 }
 
+#ifdef IF_NAMESIZE
 static char *
 ifindex_to_name_ns(__u32 ifindex, __u32 ns_dev, __u32 ns_ino, char *buf)
 {
@@ -585,6 +640,7 @@ ifindex_to_name_ns(__u32 ifindex, __u32 ns_dev, __u32 ns_ino, char *buf)
 
 	return if_indextoname(ifindex, buf);
 }
+#endif
 
 static int read_sysfs_hex_int(char *path)
 {
@@ -624,6 +680,7 @@ static int read_sysfs_netdev_hex_int(char *devname, const char *entry_name)
 	return read_sysfs_hex_int(full_path);
 }
 
+#ifdef IF_NAMESIZE
 const char *
 ifindex_to_bfd_params(__u32 ifindex, __u64 ns_dev, __u64 ns_ino,
 		      const char **opt)
@@ -691,6 +748,7 @@ void print_dev_json(__u32 ifindex, __u64 ns_dev, __u64 ns_inode)
 		jsonw_string_field(json_wtr, "ifname", name);
 	jsonw_end_object(json_wtr);
 }
+#endif // IF_NAMESIZE
 
 int parse_u32_arg(int *argc, char ***argv, __u32 *val, const char *what)
 {
@@ -729,7 +787,7 @@ static int prog_fd_by_nametag(void *nametag, int **fds, bool tag)
 	int err;
 
 	while (true) {
-		struct bpf_prog_info info = {};
+		struct bpf_prog_info info = {0};
 		__u32 len = sizeof(info);
 
 		err = bpf_prog_get_next_id(id, &id);
@@ -755,10 +813,12 @@ static int prog_fd_by_nametag(void *nametag, int **fds, bool tag)
 			goto err_close_fd;
 		}
 
+#ifdef BPF_TAG_SIZE
 		if (tag && memcmp(nametag, info.tag, BPF_TAG_SIZE)) {
 			close(fd);
 			continue;
 		}
+#endif
 
 		if (!tag) {
 			get_prog_full_name(&info, fd, prog_name,
@@ -809,7 +869,9 @@ int prog_parse_fds(int *argc, char ***argv, int **fds)
 			return -1;
 		}
 		return 1;
-	} else if (is_prefix(**argv, "tag")) {
+	}
+#ifdef BPF_TAG_SIZE
+	else if (is_prefix(**argv, "tag")) {
 		unsigned char tag[BPF_TAG_SIZE];
 
 		NEXT_ARGP();
@@ -823,7 +885,9 @@ int prog_parse_fds(int *argc, char ***argv, int **fds)
 		NEXT_ARGP();
 
 		return prog_fd_by_nametag(tag, fds, true);
-	} else if (is_prefix(**argv, "name")) {
+	}
+#endif // BPF_TAG_SIZE
+	else if (is_prefix(**argv, "name")) {
 		char *name;
 
 		NEXT_ARGP();
@@ -889,7 +953,7 @@ static int map_fd_by_name(char *name, int **fds)
 	int err;
 
 	while (true) {
-		struct bpf_map_info info = {};
+		struct bpf_map_info info = {0};
 		__u32 len = sizeof(info);
 
 		err = bpf_map_get_next_id(id, &id);

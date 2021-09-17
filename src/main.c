@@ -9,8 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __linux__
+#define HAVE_BTF_SUPPORT
+#endif
+
 #include <bpf/bpf.h>
+#ifdef HAVE_BTF_SUPPORT
 #include <bpf/btf.h>
+#endif
 #include <bpf/hashmap.h>
 #include <bpf/libbpf.h>
 
@@ -27,7 +33,9 @@ json_writer_t *json_wtr;
 bool pretty_output;
 bool json_output;
 bool show_pinned;
+#ifdef HAVE_BPFFS_SUPPORT
 bool block_mount;
+#endif
 bool verifier_logs;
 bool relaxed_maps;
 bool use_loader;
@@ -62,7 +70,20 @@ static int do_help(int argc, char **argv)
 		"       %s batch file FILE\n"
 		"       %s version\n"
 		"\n"
-		"       OBJECT := { prog | map | link | cgroup | perf | net | feature | btf | gen | struct_ops | iter }\n"
+		"       OBJECT := { prog | map | link"
+#ifdef HAVE_CGROUP_SUPPORT
+		" | cgroup"
+#endif
+#ifdef __linux__
+        " | perf | net | feature"
+#endif
+#ifdef HAVE_BTF_SUPPORT
+		" | btf"
+#endif
+#ifdef __linux__
+		" | gen | struct_ops | iter"
+#endif
+		" }\n"
 		"       " HELP_SPEC_OPTIONS " |\n"
 		"                    {-V|--version} }\n"
 		"",
@@ -287,14 +308,22 @@ static const struct cmd cmds[] = {
 	{ "prog",	do_prog },
 	{ "map",	do_map },
 	{ "link",	do_link },
+#ifdef HAVE_CGROUP_SUPPORT
 	{ "cgroup",	do_cgroup },
+#endif
+#ifdef __linux__
 	{ "perf",	do_perf },
 	{ "net",	do_net },
 	{ "feature",	do_feature },
+#endif
+#ifdef HAVE_BTF_SUPPORT
 	{ "btf",	do_btf },
+#endif
+#ifdef __linux__
 	{ "gen",	do_gen },
 	{ "struct_ops",	do_struct_ops },
 	{ "iter",	do_iter },
+#endif
 	{ "version",	do_version },
 	{ 0 }
 };
@@ -421,25 +450,39 @@ int main(int argc, char **argv)
 		{ "help",	no_argument,	NULL,	'h' },
 		{ "pretty",	no_argument,	NULL,	'p' },
 		{ "version",	no_argument,	NULL,	'V' },
+#ifdef HAVE_BPFFS_SUPPORT
 		{ "bpffs",	no_argument,	NULL,	'f' },
+#else
+		{ "pinned",	no_argument,	NULL,	'f' },
+#endif
 		{ "mapcompat",	no_argument,	NULL,	'm' },
+#ifdef HAVE_BPFFS_SUPPORT
 		{ "nomount",	no_argument,	NULL,	'n' },
+#endif
+#ifdef __linux__
 		{ "debug",	no_argument,	NULL,	'd' },
 		{ "use-loader",	no_argument,	NULL,	'L' },
+#endif
+#ifdef HAVE_BTF_SUPPORT
 		{ "base-btf",	required_argument, NULL, 'B' },
+#endif
 		{ "legacy",	no_argument,	NULL,	'l' },
 		{ 0 }
 	};
 	bool version_requested = false;
 	int opt, ret;
 
+#ifdef __linux__
 	setlinebuf(stdout);
+#endif
 
 	last_do_help = do_help;
 	pretty_output = false;
 	json_output = false;
 	show_pinned = false;
+#ifdef HAVE_BPFFS_SUPPORT
 	block_mount = false;
+#endif
 	bin_name = argv[0];
 
 	opterr = 0;
@@ -471,13 +514,18 @@ int main(int argc, char **argv)
 		case 'm':
 			relaxed_maps = true;
 			break;
+#ifdef HAVE_BPFFS_SUPPORT
 		case 'n':
 			block_mount = true;
 			break;
+#endif
+#ifdef __linux__
 		case 'd':
 			libbpf_set_print(print_all_levels);
 			verifier_logs = true;
 			break;
+#endif
+#ifdef HAVE_BTF_SUPPORT
 		case 'B':
 			base_btf = btf__parse(optarg, NULL);
 			if (libbpf_get_error(base_btf)) {
@@ -487,9 +535,12 @@ int main(int argc, char **argv)
 				return -1;
 			}
 			break;
+#endif
+#ifdef __linux__
 		case 'L':
 			use_loader = true;
 			break;
+#endif
 		case 'l':
 			legacy_libbpf = true;
 			break;
@@ -502,6 +553,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+#ifdef __linux__
 	if (!legacy_libbpf) {
 		/* Allow legacy map definitions for skeleton generation.
 		 * It will still be rejected if users use LIBBPF_STRICT_ALL
@@ -509,6 +561,7 @@ int main(int argc, char **argv)
 		 */
 		libbpf_set_strict_mode(LIBBPF_STRICT_ALL & ~LIBBPF_STRICT_MAP_DEFINITIONS);
 	}
+#endif
 
 	argc -= optind;
 	argv += optind;
@@ -523,7 +576,9 @@ int main(int argc, char **argv)
 	if (json_output)
 		jsonw_destroy(&json_wtr);
 
+#ifdef HAVE_BTF_SUPPORT
 	btf__free(base_btf);
+#endif
 
 	return ret;
 }

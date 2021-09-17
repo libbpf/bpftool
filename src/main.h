@@ -10,8 +10,70 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <linux/bpf.h>
+#ifdef __linux__
 #include <linux/compiler.h>
 #include <linux/kernel.h>
+#define HAVE_DEQUEUE_SUPPORT 1
+#define HAVE_FREEZE_SUPPORT 1
+#define HAVE_OBJ_REFS_SUPPORT 1
+#define HAVE_PROG_LOAD_TIME 1
+#define HAVE_PROG_MAP_IDS 1
+#define HAVE_BPFFS_SUPPORT 1
+#define HAVE_CGROUP_SUPPORT 1
+#endif
+#ifdef _MSC_VER
+#define __maybe_unused
+#define __noreturn
+#define __weak
+typedef int64_t ssize_t;
+#define close _close
+
+#define fprintf _fprintf_p
+#undef HAVE_DEQUEUE_SUPPORT
+#undef HAVE_FREEZE_SUPPORT
+#undef HAVE_OBJ_REFS_SUPPORT
+#undef HAVE_PROG_LOAD_TIME
+#undef HAVE_PROG_MAP_IDS
+#undef HAVE_BPFFS_SUPPORT
+#undef HAVE_CGROUP_SUPPORT
+#define BPFTOOL_WITHOUT_SKELETONS
+
+struct hash_table
+{
+    int count;
+    int data[1];
+};
+
+typedef void* hash_table_value_t;
+typedef hash_table_value_t hash_table_t;
+#define DECLARE_HASHTABLE(name, count) hash_table_value_t name[count]
+struct hlist_node
+{
+    int dummy;
+};
+void hash_init(hash_table_t* table);
+void hash_add(hash_table_t* table, struct hlist_node* hash, uint32_t id);
+inline bool hash_empty(hash_table_t* table)
+{
+    return true;
+}
+inline void
+hash_del(struct hlist_node* hash)
+{
+    (void*)hash;
+}
+
+#define hash_for_each_safe(table, bkt, tmp, obj, hash) \
+	(void*)tmp; \
+	for (bkt = 0, obj = table[bkt]; bkt < ARRAY_SIZE(table); bkt++, obj = table[bkt])
+
+#define hash_for_each_possible(table, obj, hash, id) \
+    int bkt; \
+    for (bkt = 0, obj = table[bkt]; bkt < ARRAY_SIZE(table); bkt++, obj = table[bkt])
+
+#pragma warning(disable : 4996) /* Use of non _s APIs */
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
+#endif
 
 #include <bpf/hashmap.h>
 #include <bpf/libbpf.h>
@@ -19,36 +81,51 @@
 #include "json_writer.h"
 
 /* Make sure we do not use kernel-only integer typedefs */
+#ifdef __GNUC__
 #pragma GCC poison u8 u16 u32 u64 s8 s16 s32 s64
+#endif
 
 static inline __u64 ptr_to_u64(const void *ptr)
 {
-	return (__u64)(unsigned long)ptr;
+	return (__u64)(uintptr_t)ptr;
 }
 
 static inline void *u64_to_ptr(__u64 ptr)
 {
-	return (void *)(unsigned long)ptr;
+	return (void *)(uintptr_t)ptr;
 }
 
-#define NEXT_ARG()	({ argc--; argv++; if (argc < 0) usage(); })
-#define NEXT_ARGP()	({ (*argc)--; (*argv)++; if (*argc < 0) usage(); })
+void __printf(1, 2) p_err(const char* fmt, ...);
+void __printf(1, 2) p_info(const char* fmt, ...);
+
+#ifdef _MSC_VER
+#define WRAP(x) x
+#else
+#define WRAP(x) (x)
+#endif
+#define NEXT_ARG()	WRAP({ argc--; argv++; if (argc < 0) usage(); })
+#define NEXT_ARGP()	WRAP({ (*argc)--; (*argv)++; if (*argc < 0) usage(); })
+#ifdef __GNUC__
 #define BAD_ARG()	({ p_err("what is '%s'?", *argv); -1; })
 #define GET_ARG()	({ argc--; *argv++; })
-#define REQ_ARGS(cnt)							\
-	({								\
-		int _cnt = (cnt);					\
-		bool _res;						\
-									\
-		if (argc < _cnt) {					\
-			p_err("'%s' needs at least %d arguments, %d found", \
-			      argv[-1], _cnt, argc);			\
-			_res = false;					\
-		} else {						\
-			_res = true;					\
-		}							\
-		_res;							\
-	})
+#else
+#define BAD_ARG()   (p_err("what is '%s'?", *argv), -1)
+#define GET_ARG()	( argc--, *argv++ )
+#endif
+inline bool
+get_req_args(int cnt, int argc, char** argv)
+{
+    bool res;
+
+    if (argc < cnt) {
+        p_err("'%s' needs at least %d arguments, %d found", argv[-1], cnt, argc);
+        res = false;
+    } else {
+        res = true;
+    }
+    return res;
+}
+#define REQ_ARGS(cnt) get_req_args(cnt, argc, argv)
 
 #define ERR_MAX_LEN	1024
 
@@ -78,16 +155,19 @@ extern json_writer_t *json_wtr;
 extern bool json_output;
 extern bool show_pinned;
 extern bool show_pids;
+#ifdef HAVE_BPFFS_SUPPORT
 extern bool block_mount;
+#endif
 extern bool verifier_logs;
 extern bool relaxed_maps;
+#ifdef __linux__
 extern bool use_loader;
+#endif
 extern bool legacy_libbpf;
+#ifdef HAVE_BTF_SUPPORT
 extern struct btf *base_btf;
+#endif
 extern struct hashmap *refs_table;
-
-void __printf(1, 2) p_err(const char *fmt, ...);
-void __printf(1, 2) p_info(const char *fmt, ...);
 
 bool is_prefix(const char *pfx, const char *str);
 int detect_common_prefix(const char *arg, ...);
@@ -143,13 +223,17 @@ const char *get_fd_type_name(enum bpf_obj_type type);
 char *get_fdinfo(int fd, const char *key);
 int open_obj_pinned(const char *path, bool quiet);
 int open_obj_pinned_any(const char *path, enum bpf_obj_type exp_type);
+#ifdef HAVE_BPFFS_SUPPORT
 int mount_bpffs_for_pin(const char *name);
+#endif
 int do_pin_any(int argc, char **argv, int (*get_fd_by_id)(int *, char ***));
 int do_pin_fd(int fd, const char *name);
 
 /* commands available in bootstrap mode */
 int do_gen(int argc, char **argv);
+#ifdef HAVE_BTF_SUPPORT
 int do_btf(int argc, char **argv);
+#endif
 
 /* non-bootstrap only commands */
 int do_prog(int argc, char **arg) __weak;

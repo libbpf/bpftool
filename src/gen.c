@@ -7,11 +7,15 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef __linux__
 #include <linux/err.h>
+#endif
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef __linux__
 #include <unistd.h>
+#endif
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
 #include <bpf/libbpf_internal.h>

@@ -2,8 +2,10 @@
 // Copyright (C) 2020 Facebook
 
 #define _GNU_SOURCE
+#ifdef __linux__
 #include <unistd.h>
 #include <linux/err.h>
+#endif
 #include <bpf/libbpf.h>
 
 #include "main.h"

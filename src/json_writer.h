@@ -14,7 +14,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
+#ifdef __linux__
 #include <linux/compiler.h>
+#endif
+#ifdef _WIN32
+#define __printf(x, y)
+#endif
 
 /* Opaque class structure */
 typedef struct json_writer json_writer_t;
