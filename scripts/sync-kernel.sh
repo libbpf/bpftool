@@ -67,7 +67,7 @@ PATH_MAP=(									\
 
 BPFTOOL_PATHS="${!PATH_MAP[@]}"
 BPFTOOL_VIEW_PATHS="${PATH_MAP[@]}"
-BPFTOOL_VIEW_EXCLUDE_REGEX='^src/Makefile\.(feature|include)$'
+BPFTOOL_VIEW_EXCLUDE_REGEX='^(docs/\.gitignore|src/Makefile\.(feature|include))$'
 LINUX_VIEW_EXCLUDE_REGEX='^$'
 
 # Deal with tools/bpf/bpftool first, because once we've mkdir-ed src/, command
