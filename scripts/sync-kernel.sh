@@ -289,6 +289,10 @@ fi
 # Exclude baseline commit and generate nice cover letter with summary
 git format-patch ${SQUASH_BASE_TAG}..${SQUASH_TIP_TAG} --cover-letter -o ${TMP_DIR}/patches
 
+# Compute version by concatenating kernel tip's version and hash
+git -c advice.detachedHead=false checkout ${TIP_COMMIT}
+BPFTOOL_VERSION="$(make kernelversion)-${TIP_COMMIT::12}"
+
 # Now is time to re-apply bpftool-related linux patches to bpftool repo
 cd_to ${BPFTOOL_REPO}
 git checkout -b ${BPFTOOL_SYNC_TAG}
@@ -298,6 +302,10 @@ for patch in $(ls -1 ${TMP_DIR}/patches | tail -n +2); do
 		read -p "Applying ${TMP_DIR}/patches/${patch} failed, please resolve manually and press <return> to proceed..."
 	fi
 done
+
+# Bump bpftool version number if necessary
+sed -i "s/^\(BPFTOOL_VERSION := \).*/\1${BPFTOOL_VERSION}/" src/Makefile
+git add src/Makefile
 
 # Use generated cover-letter as a template for "sync commit" with
 # baseline and checkpoint commits from kernel repo (and leave summary
@@ -314,7 +322,8 @@ Syncing latest bpftool commits from kernel repository.\n\
 Baseline bpf-next commit:   ${BASELINE_COMMIT}\n\
 Checkpoint bpf-next commit: ${TIP_COMMIT}\n\
 Baseline bpf commit:        ${BPF_BASELINE_COMMIT}\n\
-Checkpoint bpf commit:      ${BPF_TIP_COMMIT}/" |				      \
+Checkpoint bpf commit:      ${BPF_TIP_COMMIT}\n\
+Latest bpftool version:     ${BPFTOOL_VERSION}/" |				      \
 git commit --file=-
 
 echo "SUCCESS! ${COMMIT_CNT} commits synced."
