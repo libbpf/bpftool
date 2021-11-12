@@ -1,10 +1,8 @@
 # SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
-include ../../scripts/Makefile.include
+include Makefile.include
 
 ifeq ($(srctree),)
 srctree := $(patsubst %/,%,$(dir $(CURDIR)))
-srctree := $(patsubst %/,%,$(dir $(srctree)))
-srctree := $(patsubst %/,%,$(dir $(srctree)))
 endif
 
 ifeq ($(V),1)
@@ -80,9 +78,9 @@ CFLAGS += $(filter-out -Wswitch-enum -Wnested-externs,$(EXTRA_WARNINGS))
 CFLAGS += -DPACKAGE='"bpftool"' -D__EXPORTED_HEADERS__ \
 	-I$(if $(OUTPUT),$(OUTPUT),.) \
 	-I$(LIBBPF_INCLUDE) \
-	-I$(srctree)/kernel/bpf/ \
-	-I$(srctree)/tools/include \
-	-I$(srctree)/tools/include/uapi
+	-I$(srctree)/src/kernel/bpf/ \
+	-I$(srctree)/include \
+	-I$(srctree)/include/uapi
 CFLAGS += -DBPFTOOL_VERSION='"$(BPFTOOL_VERSION)"'
 ifneq ($(EXTRA_CFLAGS),)
 CFLAGS += $(EXTRA_CFLAGS)
@@ -183,7 +181,7 @@ endif
 $(OUTPUT)%.bpf.o: skeleton/%.bpf.c $(OUTPUT)vmlinux.h $(LIBBPF_BOOTSTRAP)
 	$(QUIET_CLANG)$(CLANG) \
 		-I$(if $(OUTPUT),$(OUTPUT),.) \
-		-I$(srctree)/tools/include/uapi/ \
+		-I$(srctree)/include/uapi/ \
 		-I$(LIBBPF_BOOTSTRAP_INCLUDE) \
 		-g -O2 -Wall -target bpf -c $< -o $@
 	$(Q)$(LLVM_STRIP) -g $@
@@ -200,10 +198,10 @@ endif
 
 CFLAGS += $(if $(BUILD_BPF_SKELS),,-DBPFTOOL_WITHOUT_SKELETONS)
 
-$(BOOTSTRAP_OUTPUT)disasm.o: $(srctree)/kernel/bpf/disasm.c
+$(BOOTSTRAP_OUTPUT)disasm.o: $(srctree)/src/kernel/bpf/disasm.c
 	$(QUIET_CC)$(HOSTCC) $(HOST_CFLAGS) -c -MMD $< -o $@
 
-$(OUTPUT)disasm.o: $(srctree)/kernel/bpf/disasm.c
+$(OUTPUT)disasm.o: $(srctree)/src/kernel/bpf/disasm.c
 	$(QUIET_CC)$(CC) $(CFLAGS) -c -MMD $< -o $@
 
 $(OUTPUT)feature.o:
@@ -243,7 +241,7 @@ install-bin: $(OUTPUT)bpftool
 
 install: install-bin
 	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(bash_compdir)
-	$(Q)$(INSTALL) -m 0644 bash-completion/bpftool $(DESTDIR)$(bash_compdir)
+	$(Q)$(INSTALL) -m 0644 $(srctree)/bash-completion/bpftool $(DESTDIR)$(bash_compdir)
 
 uninstall:
 	$(call QUIET_UNINST, bpftool)
@@ -251,16 +249,16 @@ uninstall:
 	$(Q)$(RM) -- $(DESTDIR)$(bash_compdir)/bpftool
 
 doc:
-	$(call descend,Documentation)
+	$(call descend,$(srctree)/docs)
 
 doc-clean:
-	$(call descend,Documentation,clean)
+	$(call descend,$(srctree)/docs,clean)
 
 doc-install:
-	$(call descend,Documentation,install)
+	$(call descend,$(srctree)/docs,install)
 
 doc-uninstall:
-	$(call descend,Documentation,uninstall)
+	$(call descend,$(srctree)/docs,uninstall)
 
 FORCE:
 
