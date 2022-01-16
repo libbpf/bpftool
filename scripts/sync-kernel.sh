@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 
 usage () {
-	echo "USAGE: ./sync-kernel.sh <bpftool-repo> <kernel-repo> <bpf-branch>"
+	echo "USAGE: ./sync-kernel.sh <bpftool-repo> <kernel-repo>"
+	echo ""
+	echo "This script synchronizes the mirror with upstream bpftool sources from the kernel repository."
+	echo "It performs the following steps:"
+	echo "  - Update the libbpf submodule, commit, and use its new checkpoints as target commits for bpftool."
+	echo "  - Cherry-pick commits from the bpf-next branch, up to the bpf-next target commit."
+	echo "  - Cherry-pick commits from the bpf branch, up to the bpf target commit."
+	echo "  - Update bpftool's version number based on bpf-next's kernel version and target commit."
+	echo "  - Create a new commit with the updated version and checkpoints."
+	echo "  - Check consistency."
 	echo ""
 	echo "Set BPF_NEXT_BASELINE to override bpf-next tree commit, otherwise read from <bpftool-repo>/CHECKPOINT-COMMIT."
 	echo "Set BPF_BASELINE to override bpf tree commit, otherwise read from <bpftool-repo>/BPF-CHECKPOINT-COMMIT."
-	echo "Set BPF_NEXT_TIP_COMMIT to override bpf-next tree target commit, otherwise use HEAD from current branch in <kernel-repo>."
-	echo "Set BPF_TIP_COMMIT to override bpf tree target commit, otherwise use tip from <bpf-branch> in <kernel-repo>."
-	echo "Set MANUAL_MODE to 1 to manually control every cherry-picked commits."
+	echo "Set BPF_NEXT_TIP_COMMIT to override bpf-next tree target commit, otherwise read from <bpftool-repo>/libbpf/CHECKPOINT-COMMIT, after libbpf update."
+	echo "Set BPF_TIP_COMMIT to override bpf tree target commit, otherwise read from <bpftool-repo>/libbpf/BPF-CHECKPOINT-COMMIT, after libbpf update."
+	echo "Set SKIP_LIBBPF_UPDATE to 1 to avoid updating libbpf automatically."
+	echo "Set MANUAL_MODE to 1 to manually control every cherry-picked commit."
 	exit 1
 }
 
@@ -15,14 +25,9 @@ set -eu
 
 BPFTOOL_REPO=${1-""}
 LINUX_REPO=${2-""}
-BPF_BRANCH=${3-""}
 
 if [ -z "${BPFTOOL_REPO}" ] || [ -z "${LINUX_REPO}" ]; then
 	echo "Error: bpftool or linux repos are not specified"
-	usage
-fi
-if [ -z "${BPF_BRANCH}" ]; then
-	echo "Error: linux's bpf tree branch is not specified"
 	usage
 fi
 
@@ -214,6 +219,35 @@ cleanup()
 	echo "DONE."
 }
 
+cd_to ${BPFTOOL_REPO}
+BPFTOOL_SYNC_TAG=bpftool-sync-${SUFFIX}
+git checkout -b ${BPFTOOL_SYNC_TAG}
+
+# Update libbpf
+if [[ "${SKIP_LIBBPF_UPDATE:-0}" -ne 1 ]]; then
+	cd_to ${BPFTOOL_REPO}/libbpf
+	git pull origin master
+	LIBBPF_VERSION=$(grep -oE '^LIBBPF_([0-9.]+)' src/libbpf.map | sort -rV | head -n1 | cut -d'_' -f2)
+	LIBBPF_COMMIT=$(git rev-parse HEAD)
+	cd_to ${BPFTOOL_REPO}
+	if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+		git add libbpf
+		git commit -m 'sync: Update libbpf submodule' \
+			-m "\
+Pull latest libbpf from mirror.
+Libbpf version: ${LIBBPF_VERSION}
+Libbpf commit:  ${LIBBPF_COMMIT}" \
+			-- libbpf
+	fi
+fi
+
+# Use libbpf's new checkpoints as tips
+TIP_COMMIT=${BPF_NEXT_TIP_COMMIT:-$(cat ${BPFTOOL_REPO}/libbpf/CHECKPOINT-COMMIT)}
+BPF_TIP_COMMIT=${BPF_TIP_COMMIT:-$(cat ${BPFTOOL_REPO}/libbpf/BPF-CHECKPOINT-COMMIT)}
+if [ -z "${TIP_COMMIT}" ] || [ -z "${BPF_TIP_COMMIT}" ]; then
+	echo "Error: bpf or bpf-next tip commits are not provided"
+	usage
+fi
 
 cd_to ${BPFTOOL_REPO}
 GITHUB_ABS_DIR=$(pwd)
@@ -226,14 +260,11 @@ done
 cd_to ${LINUX_REPO}
 LINUX_ABS_DIR=$(pwd)
 TIP_SYM_REF=$(git symbolic-ref -q --short HEAD || git rev-parse HEAD)
-TIP_COMMIT=${BPF_NEXT_TIP_COMMIT:-$(git rev-parse HEAD)}
-BPF_TIP_COMMIT=${BPF_TIP_COMMIT:-$(git rev-parse ${BPF_BRANCH})}
 BASELINE_TAG=bpftool-baseline-${SUFFIX}
 TIP_TAG=bpftool-tip-${SUFFIX}
 BPF_BASELINE_TAG=bpftool-bpf-baseline-${SUFFIX}
 BPF_TIP_TAG=bpftool-bpf-tip-${SUFFIX}
 VIEW_TAG=bpftool-view-${SUFFIX}
-BPFTOOL_SYNC_TAG=bpftool-sync-${SUFFIX}
 
 # Squash state of kernel repo at baseline into single commit
 SQUASH_BASE_TAG=bpftool-squash-base-${SUFFIX}
@@ -295,7 +326,6 @@ BPFTOOL_VERSION="$(make kernelversion)-${TIP_COMMIT::12}"
 
 # Now is time to re-apply bpftool-related linux patches to bpftool repo
 cd_to ${BPFTOOL_REPO}
-git checkout -b ${BPFTOOL_SYNC_TAG}
 
 for patch in $(ls -1 ${TMP_DIR}/patches | tail -n +2); do
 	if ! git am --3way --committer-date-is-author-date "${TMP_DIR}/patches/${patch}"; then
