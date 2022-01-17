@@ -50,6 +50,7 @@ Optional:
 - clang/LLVM (idem)
 
 Build
+[![build](https://github.com/libbpf/bpftool/actions/workflows/build.yaml/badge.svg)](https://github.com/libbpf/bpftool/actions/workflows/build.yaml)
 -----
 
 ### Initialize libbpf submodule

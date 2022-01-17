@@ -1,0 +1,31 @@
+name: build
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libbfd-dev libcap-dev libelf-dev python3-docutils
+
+      - name: Build bpftool
+        run: |
+          make -j -C src
+          ./src/bpftool 2>&1 | grep -q Usage
+
+      - name: Build bpftool's documentation
+        run: |
+          make -j -C docs
+          grep -q ".TH BPFTOOL 8" ./docs/bpftool.8
