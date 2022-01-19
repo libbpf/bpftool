@@ -59,7 +59,7 @@ This repository uses libbpf as a submodule. You can initialize it when cloning
 bpftool:
 
 ```console
-$ git clone --recurse-submodules <bpftool repository URL>
+$ git clone --recurse-submodules https://github.com/libbpf/bpftool.git
 ```
 
 Alternatively, if you have already cloned the repository, you can initialize
