@@ -28,13 +28,13 @@ define libbfd_build
 endef
 
 feature-libbfd := \
-  $(call libbfd_build,-lbfd -ldl)
+  $(findstring 1,$(call libbfd_build,-lbfd -ldl))
 ifneq ($(feature-libbfd),1)
   feature-libbfd-liberty := \
-    $(call libbfd_build,-lbfd -ldl -liberty)
+    $(findstring 1,$(call libbfd_build,-lbfd -ldl -liberty))
   ifneq ($(feature-libbfd-liberty),1)
-    feature-libbfd-liberty-z := \
-      $(call libbfd_build,-lbfd -ldl -liberty -lz)
+    $(findstring 1,feature-libbfd-liberty-z := \
+      $(call libbfd_build,-lbfd -ldl -liberty -lz))
   endif
 endif
 HAS_LIBBFD := $(findstring 1, \
