@@ -24,6 +24,9 @@ jobs:
         run: |
           make -j -C src
           ./src/bpftool 2>&1 | grep -q Usage
+          ./src/bpftool -p version | \
+              tee /dev/stderr | \
+              jq --exit-status '.features | .libbfd and .libbpf_strict'
 
       - name: Build bpftool's documentation
         run: |
