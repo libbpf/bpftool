@@ -10,7 +10,7 @@ endif
 ### feature-clang-bpf-co-re
 
 feature-clang-bpf-co-re := \
-  $(shell echo 'struct s { int i; } __attribute__((preserve_access_index)); struct s foo;' | \
+  $(shell printf '%s\n' 'struct s { int i; } __attribute__((preserve_access_index)); struct s foo;' | \
     $(CLANG) -g -target bpf -S -o - -x c - 2>/dev/null | grep -q BTF_KIND_VAR && echo 1)
 
 ### feature-reallocarray
@@ -27,7 +27,7 @@ LIBBFD_PROBE += '	return 0;'
 LIBBFD_PROBE += '}'
 
 define libbfd_build
-  $(shell echo $(LIBBFD_PROBE) | \
+  $(shell printf '%b\n' $(LIBBFD_PROBE) | \
     $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - $(1) -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
@@ -54,7 +54,7 @@ DISASSEMBLER_PROBE += '	return 0;'
 DISASSEMBLER_PROBE += '}'
 
 define disassembler_build
-  $(shell echo $(DISASSEMBLER_PROBE) | \
+  $(shell printf '%b\n' $(DISASSEMBLER_PROBE) | \
     $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - -lbfd -lopcodes -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
@@ -70,7 +70,7 @@ ZLIB_PROBE += '	return 0;'
 ZLIB_PROBE += '}'
 
 define zlib_build
-  $(shell echo $(ZLIB_PROBE) | \
+  $(shell printf '%b\n' $(ZLIB_PROBE) | \
     $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - -lz -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
@@ -86,7 +86,7 @@ LIBCAP_PROBE += '	return 0;'
 LIBCAP_PROBE += '}'
 
 define libcap_build
-  $(shell echo $(LIBCAP_PROBE) | \
+  $(shell printf '%b\n' $(LIBCAP_PROBE) | \
     $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - -lcap -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
