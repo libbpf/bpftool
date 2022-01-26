@@ -5,7 +5,7 @@
 
 #include <linux/compiler_types.h>
 
-#ifdef __OPTIMIZE__
+#if defined(__OPTIMIZE__) && __has_attribute(__error__)
 # define __compiletime_assert(condition, msg, prefix, suffix)		\
 	do {								\
 		extern void prefix ## suffix(void) __compiletime_error(msg); \
