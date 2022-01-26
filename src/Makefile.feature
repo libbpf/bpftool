@@ -2,6 +2,11 @@
 
 pound := \#
 
+CFLAGS_BACKUP := $(CFLAGS)
+ifneq ($(LLVM),)
+  CFLAGS += -Wno-unused-command-line-argument
+endif
+
 ### feature-clang-bpf-co-re
 
 feature-clang-bpf-co-re := \
@@ -103,3 +108,5 @@ $(call feature_print_status,$(HAS_LIBBFD),libbfd)
 
 $(foreach feature,$(filter-out libbfd,$(FEATURE_DISPLAY)), \
   $(call feature_print_status,$(feature-$(feature)),$(feature)))
+
+CFLAGS := $(CFLAGS_BACKUP)
