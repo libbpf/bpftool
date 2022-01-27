@@ -59,6 +59,7 @@ PATH_MAP=(									\
 	[tools/include/uapi/linux/bpf.h]=include/uapi/linux/bpf.h		\
 	[tools/include/uapi/linux/btf.h]=include/uapi/linux/btf.h		\
 	[tools/include/uapi/linux/const.h]=include/uapi/linux/const.h		\
+	[tools/include/uapi/linux/if_link.h]=include/uapi/linux/if_link.h	\
 	[tools/include/uapi/linux/perf_event.h]=include/uapi/linux/perf_event.h	\
 	[tools/include/uapi/linux/pkt_cls.h]=include/uapi/linux/pkt_cls.h	\
 	[tools/include/uapi/linux/pkt_sched.h]=include/uapi/linux/pkt_sched.h	\
