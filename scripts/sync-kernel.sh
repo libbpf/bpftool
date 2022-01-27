@@ -360,6 +360,14 @@ git checkout -b ${VIEW_TAG} ${TIP_COMMIT}
 FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --tree-filter "${BPFTOOL_TREE_FILTER}" ${VIEW_TAG}^..${VIEW_TAG}
 FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --subdirectory-filter __bpftool ${VIEW_TAG}^..${VIEW_TAG}
 git ls-files -- ${BPFTOOL_VIEW_PATHS[@]} | grep -v -E "${LINUX_VIEW_EXCLUDE_REGEX}" > ${TMP_DIR}/linux-view.ls
+# Before we compare each file, try to apply to the mirror a patch containing the
+# expected differences between the two repositories; this is to avoid checking
+# "known" differences visually and taking the risk of missing a new, relevant
+# differences.
+echo "Patching to account for expected differences..."
+patch -d "${LINUX_ABS_DIR}" -p0 -f --reject-file=- --no-backup-if-mismatch < "${GITHUB_ABS_DIR}/scripts/sync-kernel-expected-diff.patch" || true
+git add -u
+git commit -m 'tmp: apply expected differences to compare github/kernel repos' || true
 
 cd_to ${BPFTOOL_REPO}
 git ls-files -- ${BPFTOOL_VIEW_PATHS[@]} | grep -v -E "${BPFTOOL_VIEW_EXCLUDE_REGEX}" > ${TMP_DIR}/github-view.ls
@@ -374,11 +382,24 @@ for F in $(cat ${TMP_DIR}/linux-view.ls); do
 		CONSISTENT=0
 	fi
 done
+echo ""
 if ((${CONSISTENT} == 1)); then
 	echo "Great! Content is identical!"
 else
 	ignore_inconsistency=n
 	echo "Unfortunately, there are some inconsistencies, please double check."
+	echo "Some of them may come from patches in bpf tree but absent from bpf-next."
+	echo "Note: I applied scripts/sync-kernel-expected-diff.patch before checking,"
+	echo "to account for expected changes. If this patch needs an update,"
+	echo "you can do it now with:"
+	echo "------"
+	echo "    (cd \"${LINUX_ABS_DIR}\" && git -c advice.detachedHead=false checkout HEAD~)"
+	echo "    for f in \$(cat \"${TMP_DIR}/linux-view.ls\"); do"
+	echo "        diff -u --label \"\${f}\" --label \"\${f}\" \\"
+	echo "            \"${LINUX_ABS_DIR}/\${f}\" \\"
+	echo "            \"${GITHUB_ABS_DIR}/\${f}\""
+	echo "    done > \"${GITHUB_ABS_DIR}/scripts/sync-kernel-expected-diff.patch\""
+	echo "------"
 	read -p "Does everything look good? [y/N]: " ignore_inconsistency
 	case "${ignore_inconsistency}" in
 		"y" | "Y")
