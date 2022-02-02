@@ -323,7 +323,7 @@ git format-patch ${SQUASH_BASE_TAG}..${SQUASH_TIP_TAG} --cover-letter -o ${TMP_D
 
 # Compute version by concatenating kernel tip's version and hash
 git -c advice.detachedHead=false checkout ${TIP_COMMIT}
-BPFTOOL_VERSION="$(make kernelversion)-${TIP_COMMIT::12}"
+BPFTOOL_VERSION="$(make kernelversion)+${TIP_COMMIT::12}"
 
 # Now is time to re-apply bpftool-related linux patches to bpftool repo
 cd_to ${BPFTOOL_REPO}
