@@ -215,7 +215,9 @@ cleanup()
 	cd_to ${LINUX_REPO}
 	git checkout ${TIP_SYM_REF}
 	git branch -D ${BASELINE_TAG} ${TIP_TAG} ${BPF_BASELINE_TAG} ${BPF_TIP_TAG} \
-		      ${SQUASH_BASE_TAG} ${SQUASH_TIP_TAG} ${VIEW_TAG} || true
+		      ${SQUASH_BASE_TAG} ${SQUASH_TIP_TAG} || true
+	git show-ref --verify --quiet refs/heads/${VIEW_TAG} && \
+		git branch -D ${VIEW_TAG} || true
 
 	cd_to .
 	echo "DONE."
