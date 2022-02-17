@@ -8,7 +8,6 @@ usage () {
 	echo "  - Update the libbpf submodule, commit, and use its new checkpoints as target commits for bpftool."
 	echo "  - Cherry-pick commits from the bpf-next branch, up to the bpf-next target commit."
 	echo "  - Cherry-pick commits from the bpf branch, up to the bpf target commit."
-	echo "  - Update bpftool's version number based on bpf-next's kernel version and target commit."
 	echo "  - Create a new commit with the updated version and checkpoints."
 	echo "  - Check consistency."
 	echo ""
