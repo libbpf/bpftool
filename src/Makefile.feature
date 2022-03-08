@@ -13,11 +13,6 @@ feature-clang-bpf-co-re := \
   $(shell printf '%s\n' 'struct s { int i; } __attribute__((preserve_access_index)); struct s foo;' | \
     $(CLANG) -g -target bpf -S -o - -x c - 2>/dev/null | grep -q BTF_KIND_VAR && echo 1)
 
-### feature-reallocarray
-
-# This mirror re-implements reallocarray(), so the function is always available.
-feature-reallocarray := 1
-
 ### feature-libbfd
 
 LIBBFD_PROBE := '$(pound)include <bfd.h>\n'
