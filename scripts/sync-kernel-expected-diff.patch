@@ -47,9 +47,9 @@
  
  $(LIBBPF): $(wildcard $(BPF_DIR)/*.[ch] $(BPF_DIR)/Makefile) | $(LIBBPF_OUTPUT)
 -	$(Q)$(MAKE) -C $(BPF_DIR) OUTPUT=$(LIBBPF_OUTPUT) \
--		DESTDIR=$(LIBBPF_DESTDIR) prefix= $(LIBBPF) install_headers
+-		DESTDIR=$(LIBBPF_DESTDIR:/=) prefix= $(LIBBPF) install_headers
 +	$(Q)$(MAKE) -C $(BPF_DIR) OBJDIR=$(patsubst %/,%,$(LIBBPF_OUTPUT)) \
-+		PREFIX=$(LIBBPF_DESTDIR) $(LIBBPF) install_headers
++		PREFIX=$(LIBBPF_DESTDIR:/=) $(LIBBPF) install_headers
  
  $(LIBBPF_INTERNAL_HDRS): $(LIBBPF_HDRS_DIR)/%.h: $(BPF_DIR)/%.h | $(LIBBPF_HDRS_DIR)
  	$(call QUIET_INSTALL, $@)
@@ -57,9 +57,9 @@
  
  $(LIBBPF_BOOTSTRAP): $(wildcard $(BPF_DIR)/*.[ch] $(BPF_DIR)/Makefile) | $(LIBBPF_BOOTSTRAP_OUTPUT)
 -	$(Q)$(MAKE) -C $(BPF_DIR) OUTPUT=$(LIBBPF_BOOTSTRAP_OUTPUT) \
--		DESTDIR=$(LIBBPF_BOOTSTRAP_DESTDIR) prefix= \
+-		DESTDIR=$(LIBBPF_BOOTSTRAP_DESTDIR:/=) prefix= \
 +	$(Q)$(MAKE) -C $(BPF_DIR) OBJDIR=$(patsubst %/,%,$(LIBBPF_BOOTSTRAP_OUTPUT)) \
-+		PREFIX=$(LIBBPF_BOOTSTRAP_DESTDIR) \
++		PREFIX=$(LIBBPF_BOOTSTRAP_DESTDIR:/=) \
  		ARCH= CROSS_COMPILE= CC=$(HOSTCC) LD=$(HOSTLD) $@ install_headers
  
  $(LIBBPF_BOOTSTRAP_INTERNAL_HDRS): $(LIBBPF_BOOTSTRAP_HDRS_DIR)/%.h: $(BPF_DIR)/%.h | $(LIBBPF_BOOTSTRAP_HDRS_DIR)
@@ -89,7 +89,7 @@
  endif
  
  ifeq ($(feature-disassembler-four-args), 1)
-@@ -185,7 +179,7 @@
+@@ -181,7 +175,7 @@
  $(OUTPUT)%.bpf.o: skeleton/%.bpf.c $(OUTPUT)vmlinux.h $(LIBBPF_BOOTSTRAP)
  	$(QUIET_CLANG)$(CLANG) \
  		-I$(if $(OUTPUT),$(OUTPUT),.) \
@@ -98,7 +98,7 @@
  		-I$(LIBBPF_BOOTSTRAP_INCLUDE) \
  		-g -O2 -Wall -target bpf -c $< -o $@
  	$(Q)$(LLVM_STRIP) -g $@
-@@ -202,10 +196,10 @@
+@@ -198,10 +192,10 @@
  
  CFLAGS += $(if $(BUILD_BPF_SKELS),,-DBPFTOOL_WITHOUT_SKELETONS)
  
@@ -111,7 +111,7 @@
  	$(QUIET_CC)$(CC) $(CFLAGS) -c -MMD $< -o $@
  
  $(OUTPUT)feature.o:
-@@ -229,7 +223,7 @@
+@@ -225,7 +219,7 @@
  	$(call QUIET_CLEAN, feature-detect)
  	$(Q)$(MAKE) -C $(srctree)/tools/build/feature/ clean >/dev/null
  
@@ -120,7 +120,7 @@
  	$(call QUIET_CLEAN, bpftool)
  	$(Q)$(RM) -- $(OUTPUT)bpftool $(OUTPUT)*.o $(OUTPUT)*.d
  	$(Q)$(RM) -- $(OUTPUT)*.skel.h $(OUTPUT)vmlinux.h
-@@ -245,7 +239,7 @@
+@@ -241,7 +235,7 @@
  
  install: install-bin
  	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(bash_compdir)
@@ -129,7 +129,7 @@
  
  uninstall:
  	$(call QUIET_UNINST, bpftool)
-@@ -253,16 +247,16 @@
+@@ -249,16 +243,16 @@
  	$(Q)$(RM) -- $(DESTDIR)$(bash_compdir)/bpftool
  
  doc:
