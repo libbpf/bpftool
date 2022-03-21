@@ -45,4 +45,12 @@
 		.off  = OFF,					\
 		.imm  = IMM })
 
+#define BPF_EMIT_CALL(FUNC)					\
+	((struct bpf_insn) {					\
+		.code  = BPF_JMP | BPF_CALL,			\
+		.dst_reg = 0,					\
+		.src_reg = 0,					\
+		.off   = 0,					\
+		.imm   = ((FUNC) - BPF_FUNC_unspec) })
+
 #endif
