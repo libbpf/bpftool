@@ -131,8 +131,13 @@ get_req_args(int cnt, int argc, char** argv)
 
 #define BPF_TAG_FMT	"%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx"
 
+#ifdef BPF_TAG_SIZE
 #define HELP_SPEC_PROGRAM						\
 	"PROG := { id PROG_ID | pinned FILE | tag PROG_TAG | name PROG_NAME }"
+#else
+#define HELP_SPEC_PROGRAM						\
+	"PROG := { id PROG_ID | pinned FILE | name PROG_NAME }"
+#endif
 #define HELP_SPEC_OPTIONS						\
 	"OPTIONS := { {-j|--json} [{-p|--pretty}] | {-d|--debug} | {-l|--legacy}"
 #define HELP_SPEC_MAP							\

@@ -358,21 +358,23 @@ const char *get_fd_type_name(enum bpf_obj_type type)
 	return names[type];
 }
 
-#ifdef HAVE_BTF_SUPPORT
 void get_prog_full_name(const struct bpf_prog_info *prog_info, int prog_fd,
 			char *name_buff, size_t buff_len)
 {
 	const char *prog_name = prog_info->name;
+#ifdef HAVE_BTF_SUPPORT
 	const struct btf_type *func_type;
 	const struct bpf_func_info finfo = {0};
 	struct bpf_prog_info info = {0};
 	__u32 info_len = sizeof(info);
 	struct btf *prog_btf = NULL;
+#endif
 
 	if (buff_len <= BPF_OBJ_NAME_LEN ||
 	    strlen(prog_info->name) < BPF_OBJ_NAME_LEN - 1)
 		goto copy_name;
 
+#ifdef HAVE_BTF_SUPPORT
 	if (!prog_info->btf_id || prog_info->nr_func_info == 0)
 		goto copy_name;
 
@@ -394,14 +396,16 @@ void get_prog_full_name(const struct bpf_prog_info *prog_info, int prog_fd,
 		goto copy_name;
 
 	prog_name = btf__name_by_offset(prog_btf, func_type->name_off);
+#endif
 
 copy_name:
 	snprintf(name_buff, buff_len, "%s", prog_name);
 
+#ifdef HAVE_BTF_SUPPORT
 	if (prog_btf)
 		btf__free(prog_btf);
-}
 #endif
+}
 
 int get_fd_type(int fd)
 {

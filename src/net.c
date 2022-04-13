@@ -12,6 +12,7 @@
 #endif
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
+#ifdef __linux__
 #include <net/if.h>
 #ifdef __linux__
 #include <linux/rtnetlink.h>
@@ -19,10 +20,17 @@
 #include <linux/tc_act/tc_bpf.h>
 #endif
 #include <sys/socket.h>
+#endif
+#ifdef _WIN32
+#include <winsock2.h>
+#include <netioapi.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef __linux__
 #include "bpf/nlattr.h"
+#endif
 #include "main.h"
 #include "netlink_dumper.h"
 
@@ -97,6 +105,7 @@ typedef int (*dump_nlmsg_t)(void *cookie, void *msg, struct nlattr **tb);
 
 typedef int (*__dump_nlmsg_t)(struct nlmsghdr *nlmsg, dump_nlmsg_t, void *cookie);
 
+#ifdef AF_NETLINK
 static int netlink_open(__u32 *nl_pid)
 {
 	struct sockaddr_nl sa;
@@ -484,7 +493,9 @@ out:
 	free(tcinfo.handle_array);
 	return 0;
 }
+#endif
 
+#ifdef __linux__
 static int query_flow_dissector(struct bpf_attach_info *attach_info)
 {
 	__u32 attach_flags;
@@ -520,6 +531,7 @@ static int query_flow_dissector(struct bpf_attach_info *attach_info)
 
 	return 0;
 }
+#endif
 
 static int net_parse_dev(int *argc, char ***argv)
 {
@@ -546,14 +558,22 @@ static int do_attach_detach_xdp(int progfd, enum net_attach_type attach_type,
 {
 	__u32 flags = 0;
 
+#ifdef XDP_FLAGS_UPDATE_IF_NOEXIST
 	if (!overwrite)
 		flags = XDP_FLAGS_UPDATE_IF_NOEXIST;
+#endif
+#ifdef XDP_FLAGS_SKB_MODE
 	if (attach_type == NET_ATTACH_TYPE_XDP_GENERIC)
 		flags |= XDP_FLAGS_SKB_MODE;
+#endif
+#ifdef XDP_FLAGS_DRV_MODE
 	if (attach_type == NET_ATTACH_TYPE_XDP_DRIVER)
 		flags |= XDP_FLAGS_DRV_MODE;
+#endif
+#ifdef XDP_FLAGS_HW_MODE
 	if (attach_type == NET_ATTACH_TYPE_XDP_OFFLOAD)
 		flags |= XDP_FLAGS_HW_MODE;
+#endif
 
 	return bpf_xdp_attach(ifindex, progfd, flags, NULL);
 }
@@ -649,9 +669,10 @@ static int do_detach(int argc, char **argv)
 	return 0;
 }
 
+#ifdef __linux__
 static int do_show(int argc, char **argv)
 {
-	struct bpf_attach_info attach_info = {};
+	struct bpf_attach_info attach_info = {0};
 	int i, sock, ret, filter_idx = -1;
 	struct bpf_netdev_t dev_array;
 	unsigned int nl_pid = 0;
@@ -717,6 +738,7 @@ static int do_show(int argc, char **argv)
 	close(sock);
 	return ret;
 }
+#endif
 
 static int do_help(int argc, char **argv)
 {
@@ -726,8 +748,12 @@ static int do_help(int argc, char **argv)
 	}
 
 	fprintf(stderr,
-		"Usage: %1$s %2$s { show | list } [dev <devname>]\n"
-		"       %1$s %2$s attach ATTACH_TYPE PROG dev <devname> [ overwrite ]\n"
+		"Usage: "
+#ifdef __linux__
+		          "%1$s %2$s { show | list } [dev <devname>]\n"
+		"       "
+#endif
+		          "%1$s %2$s attach ATTACH_TYPE PROG dev <devname> [ overwrite ]\n"
 		"       %1$s %2$s detach ATTACH_TYPE dev <devname>\n"
 		"       %1$s %2$s help\n"
 		"\n"
@@ -747,8 +773,10 @@ static int do_help(int argc, char **argv)
 }
 
 static const struct cmd cmds[] = {
+#ifdef __linux__
 	{ "show",	do_show },
 	{ "list",	do_show },
+#endif
 	{ "attach",	do_attach },
 	{ "detach",	do_detach },
 	{ "help",	do_help },

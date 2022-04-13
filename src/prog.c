@@ -39,8 +39,11 @@
 #endif
 #include <bpf/hashmap.h>
 #include <bpf/libbpf.h>
-#include <bpf/libbpf_internal.h>
+#ifdef WIN32
+#include "../libbpf/src/libbpf_internal.h"
+#endif
 #ifdef __linux__
+#include <bpf/libbpf_internal.h>
 #include <bpf/skel_internal.h>
 #endif
 #ifdef _MSC_VER
@@ -465,12 +468,10 @@ static void print_prog_header_json(struct bpf_prog_info *info, int fd)
 	else
 		jsonw_uint_field(json_wtr, "type", info->type);
 
-#ifdef __linux__
 	if (*info->name) {
 		get_prog_full_name(info, fd, prog_name, sizeof(prog_name));
 		jsonw_string_field(json_wtr, "name", prog_name);
 	}
-#endif
 
 #ifdef BPF_TAG_SIZE
 	jsonw_name(json_wtr, "tag");
@@ -575,12 +576,10 @@ static void print_prog_header_plain(struct bpf_prog_info *info, int fd)
 	else
 		printf("type %u  ", info->type);
 
-#ifdef __linux__
 	if (*info->name) {
 		get_prog_full_name(info, fd, prog_name, sizeof(prog_name));
 		printf("name %s  ", prog_name);
 	}
-#endif
 
 #ifdef BPF_TAG_SIZE
 	printf("tag ");

@@ -75,7 +75,11 @@ static int do_help(int argc, char **argv)
 		" | cgroup"
 #endif
 #ifdef __linux__
-        " | perf | net | feature"
+        " | perf"
+#endif
+		" | net"
+#ifdef __linux__
+		" | feature"
 #endif
 #ifdef HAVE_BTF_SUPPORT
 		" | btf"
@@ -313,7 +317,9 @@ static const struct cmd cmds[] = {
 #endif
 #ifdef __linux__
 	{ "perf",	do_perf },
+#endif
 	{ "net",	do_net },
+#ifdef __linux__
 	{ "feature",	do_feature },
 #endif
 #ifdef HAVE_BTF_SUPPORT
