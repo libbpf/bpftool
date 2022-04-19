@@ -2461,8 +2461,14 @@ static int do_help(int argc, char **argv)
 #endif
 		"       %1$s %2$s pin   PROG FILE\n"
 		"       %1$s %2$s { load | loadall } OBJ  PATH \\\n"
-		"                         [type TYPE] [dev NAME] \\\n"
+		"                         [type TYPE]"
+#ifdef IF_NAMESIZE
+		" [dev NAME]"
+#endif
+		" \\\n"
+#ifdef __linux__
 		"                         [map { idx IDX | name NAME } MAP]\\\n"
+#endif
 		"                         [pinmaps MAP_DIR]\n"
 #ifdef __linux__
 		"       %1$s %2$s attach PROG ATTACH_TYPE [MAP]\n"
@@ -2477,7 +2483,9 @@ static int do_help(int argc, char **argv)
 #endif
 		"       %1$s %2$s help\n"
 		"\n"
+#ifdef __linux__
 		"       " HELP_SPEC_MAP "\n"
+#endif
 		"       " HELP_SPEC_PROGRAM "\n"
 		"       TYPE := { "
 #ifdef __linux__
