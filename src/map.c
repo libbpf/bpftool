@@ -956,7 +956,10 @@ map_dump(int fd, struct bpf_map_info *info, json_writer_t *wtr,
 exit_free:
 	free(key);
 	free(value);
+	#if 0
+	// Upstream has a bug here where this is closed here and then again in the caller.
 	close(fd);
+	#endif
 #ifdef HAVE_BTF_SUPPORT
 	free_map_kv_btf(btf);
 #endif
