@@ -33,8 +33,8 @@ ifneq ($(feature-libbfd),1)
   feature-libbfd-liberty := \
     $(findstring 1,$(call libbfd_build,-lbfd -ldl -liberty))
   ifneq ($(feature-libbfd-liberty),1)
-    $(findstring 1,feature-libbfd-liberty-z := \
-      $(call libbfd_build,-lbfd -ldl -liberty -lz))
+    feature-libbfd-liberty-z := \
+      $(findstring 1,$(call libbfd_build,-lbfd -ldl -liberty -lz))
   endif
 endif
 HAS_LIBBFD := $(findstring 1, \
