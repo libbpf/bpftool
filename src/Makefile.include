@@ -10,13 +10,17 @@ CLANG        ?= clang$(LLVM_VERSION)
 LLVM_STRIP   ?= llvm-strip$(LLVM_VERSION)
 
 ifneq ($(LLVM),)
+  $(if $(findstring default,$(origin AR)),$(eval AR := llvm-ar$(LLVM_VERSION)))
   $(if $(findstring default,$(origin CC)),$(eval CC := clang$(LLVM_VERSION)))
   $(if $(findstring default,$(origin LD)),$(eval LD := ld.lld$(LLVM_VERSION)))
+  HOSTAR ?= llvm-ar
   HOSTCC ?= clang
   HOSTLD ?= ld.lld
 else
+  $(if $(findstring default,$(origin AR)),$(eval AR = $(CROSS_COMPILE)$(AR)))
   $(if $(findstring default,$(origin CC)),$(eval CC = $(CROSS_COMPILE)$(CC)))
   $(if $(findstring default,$(origin LD)),$(eval LD = $(CROSS_COMPILE)$(LD)))
+  HOSTAR ?= ar
   HOSTCC ?= gcc
   HOSTLD ?= ld
 endif
