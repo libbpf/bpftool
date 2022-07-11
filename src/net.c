@@ -549,7 +549,7 @@ static int net_parse_dev(int *argc, char ***argv)
 				if (ConvertInterfaceAliasToLuid(if_alias, &if_luid) == ERROR_SUCCESS) {
 					ConvertInterfaceLuidToIndex(&if_luid, &ifindex);
 				}
-            }
+			}
 		}
 		if (!ifindex)
 #endif
