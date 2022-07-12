@@ -495,7 +495,7 @@ out:
 }
 #endif
 
-#ifdef __linux__
+#ifdef BPF_FLOW_DISSECTOR
 static int query_flow_dissector(struct bpf_attach_info *attach_info)
 {
 	__u32 attach_flags;
@@ -682,13 +682,15 @@ static int do_detach(int argc, char **argv)
 	return 0;
 }
 
-#ifdef __linux__
 static int do_show(int argc, char **argv)
 {
 	struct bpf_attach_info attach_info = {0};
-	int i, sock, ret, filter_idx = -1;
+	int i, ret = 0, filter_idx = -1;
 	struct bpf_netdev_t dev_array;
+#ifdef AF_NETLINK
+	int sock;
 	unsigned int nl_pid = 0;
+#endif
 	char err_buf[256];
 
 	if (argc == 2) {
@@ -699,15 +701,19 @@ static int do_show(int argc, char **argv)
 		usage();
 	}
 
+#ifdef BPF_FLOW_DISSECTOR
 	ret = query_flow_dissector(&attach_info);
 	if (ret)
 		return -1;
+#endif
 
+#ifdef AF_NETLINK
 	sock = netlink_open(&nl_pid);
 	if (sock < 0) {
 		fprintf(stderr, "failed to open netlink sock\n");
 		return -1;
 	}
+#endif
 
 	dev_array.devices = NULL;
 	dev_array.used_len = 0;
@@ -718,9 +724,45 @@ static int do_show(int argc, char **argv)
 		jsonw_start_array(json_wtr);
 	NET_START_OBJECT;
 	NET_START_ARRAY("xdp", "%s:\n");
+#ifdef AF_NETLINK
 	ret = netlink_get_link(sock, nl_pid, dump_link_nlmsg, &dev_array);
+#endif
+#ifdef _WIN32
+    // Enumerate links for xdp
+    uint32_t link_id = 0;
+    for (;;) {
+            if (bpf_link_get_next_id(link_id, &link_id) < 0) {
+                break;
+            }
+
+            fd_t link_fd = bpf_link_get_fd_by_id(link_id);
+            if (link_fd < 0) {
+                break;
+            }
+
+            struct bpf_link_info info;
+            uint32_t info_size = (uint32_t)sizeof(info);
+            if (bpf_obj_get_info_by_fd(link_fd, &info, &info_size) == 0) {
+                const char* attach_type_name = ebpf_get_attach_type_name(&info.attach_type_uuid);
+
+				char name_buffer[IF_NAMESIZE];
+                char* name = if_indextoname(info.xdp.ifindex, name_buffer);
+
+				NET_START_OBJECT;
+                if (name)
+                    NET_DUMP_STR("devname", "%s", name);
+				NET_DUMP_UINT("ifindex", "(%d)", info.xdp.ifindex);
+                NET_DUMP_STR("mode", " %s", attach_type_name);
+                NET_DUMP_UINT("id", " id %u", info.prog_id);
+                NET_END_OBJECT_FINAL;
+            }
+
+            _close(link_fd);
+    }
+#endif
 	NET_END_ARRAY("\n");
 
+#ifdef __linux__
 	if (!ret) {
 		NET_START_ARRAY("tc", "%s:\n");
 		for (i = 0; i < dev_array.used_len; i++) {
@@ -731,11 +773,14 @@ static int do_show(int argc, char **argv)
 		}
 		NET_END_ARRAY("\n");
 	}
+#endif
 
+#ifdef BPF_FLOW_DISSECTOR
 	NET_START_ARRAY("flow_dissector", "%s:\n");
 	if (attach_info.flow_dissector_id > 0)
 		NET_DUMP_UINT("id", "id %u", attach_info.flow_dissector_id);
 	NET_END_ARRAY("\n");
+#endif
 
 	NET_END_OBJECT;
 	if (json_output)
@@ -748,10 +793,11 @@ static int do_show(int argc, char **argv)
 		fprintf(stderr, "Error: %s\n", err_buf);
 	}
 	free(dev_array.devices);
+#ifdef AF_NETLINK
 	close(sock);
+#endif
 	return ret;
 }
-#endif
 
 static int do_help(int argc, char **argv)
 {
@@ -762,10 +808,8 @@ static int do_help(int argc, char **argv)
 
 	fprintf(stderr,
 		"Usage: "
-#ifdef __linux__
 		          "%1$s %2$s { show | list } [dev <devname>]\n"
 		"       "
-#endif
 		          "%1$s %2$s attach ATTACH_TYPE PROG dev <devname> [ overwrite ]\n"
 		"       %1$s %2$s detach ATTACH_TYPE dev <devname>\n"
 		"       %1$s %2$s help\n"
@@ -786,10 +830,8 @@ static int do_help(int argc, char **argv)
 }
 
 static const struct cmd cmds[] = {
-#ifdef __linux__
 	{ "show",	do_show },
 	{ "list",	do_show },
-#endif
 	{ "attach",	do_attach },
 	{ "detach",	do_detach },
 	{ "help",	do_help },
