@@ -743,7 +743,7 @@ static int do_show(int argc, char **argv)
             struct bpf_link_info info;
             uint32_t info_size = (uint32_t)sizeof(info);
             if (bpf_obj_get_info_by_fd(link_fd, &info, &info_size) == 0) {
-                const char* attach_type_name = ebpf_get_attach_type_name(&info.attach_type_uuid);
+                const char* attach_type_name = libbpf_bpf_attach_type_str(info.attach_type);
 
 				char name_buffer[IF_NAMESIZE];
                 char* name = if_indextoname(info.xdp.ifindex, name_buffer);
@@ -751,7 +751,7 @@ static int do_show(int argc, char **argv)
 				NET_START_OBJECT;
                 if (name)
                     NET_DUMP_STR("devname", "%s", name);
-				NET_DUMP_UINT("ifindex", "(%d)", info.xdp.ifindex);
+				NET_DUMP_UINT("ifindex", "(%u)", info.xdp.ifindex);
                 NET_DUMP_STR("mode", " %s", attach_type_name);
                 NET_DUMP_UINT("id", " id %u", info.prog_id);
                 NET_END_OBJECT_FINAL;
