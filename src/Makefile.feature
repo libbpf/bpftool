@@ -56,22 +56,6 @@ endef
 
 feature-disassembler-four-args := $(findstring 1, $(call disassembler_build))
 
-### feature-zlib
-
-ZLIB_PROBE := '$(pound)include <zlib.h>\n'
-ZLIB_PROBE += 'int main(void) {'
-ZLIB_PROBE += '	gzopen(NULL, "r");'
-ZLIB_PROBE += '	return 0;'
-ZLIB_PROBE += '}'
-
-define zlib_build
-  $(shell printf '%b\n' $(ZLIB_PROBE) | \
-    $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - -lz -S -o - >/dev/null 2>&1 \
-    && echo 1)
-endef
-
-feature-zlib := $(findstring 1, $(call zlib_build))
-
 ### feature-libcap
 
 LIBCAP_PROBE := '$(pound)include <sys/capability.h>\n'
