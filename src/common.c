@@ -11,8 +11,7 @@
 #include <mntent.h>
 #endif
 #ifdef _WIN32
-#include <io.h>
-#include <windows.h>
+#include "windows/platform.h"
 #endif
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,15 +41,6 @@
 #endif
 
 #include "main.h"
-#ifdef _WIN32
-char*
-dirname(char* path)
-{
-    static char dir[_MAX_DIR];
-    _splitpath(path, NULL, dir, NULL, NULL);
-    return dir;
-}
-#endif
 
 #ifndef BPF_FS_MAGIC
 #define BPF_FS_MAGIC		0xcafe4a11
@@ -596,15 +586,6 @@ void delete_pinned_obj_table(struct hashmap *map)
 
 	hashmap__free(map);
 }
-
-#ifdef _WIN32
-int getpagesize(void)
-{
-    SYSTEM_INFO info;
-    GetSystemInfo(&info);
-    return info.dwPageSize;
-}
-#endif
 
 unsigned int get_page_size(void)
 {

@@ -20,9 +20,7 @@
 #include <sys/socket.h>
 #endif
 #ifdef _WIN32
-#include <winsock2.h>
-#include <netioapi.h>
-#include <io.h>
+#include "windows/platform.h"
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -540,19 +538,10 @@ static int net_parse_dev(int *argc, char ***argv)
 		NEXT_ARGP();
 
 #ifdef _WIN32
-		ifindex = atoi(**argv);
-		if (!ifindex) {
-			WCHAR if_alias[80];
-			if (MultiByteToWideChar(CP_ACP, 0, **argv, -1, if_alias, sizeof(if_alias) / sizeof(*if_alias)) > 0) {
-				NET_LUID if_luid;
-				if (ConvertInterfaceAliasToLuid(if_alias, &if_luid) == ERROR_SUCCESS) {
-					ConvertInterfaceLuidToIndex(&if_luid, (NET_IFINDEX*)&ifindex);
-				}
-			}
-		}
-		if (!ifindex)
-#endif
+		ifindex = if_stringtoindex(**argv);
+#else
 		ifindex = if_nametoindex(**argv);
+#endif
 		if (!ifindex)
 			p_err("invalid devname %s", **argv);
 
