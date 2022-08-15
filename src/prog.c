@@ -46,13 +46,6 @@
 #include <bpf/libbpf_internal.h>
 #include <bpf/skel_internal.h>
 #endif
-#ifdef _MSC_VER
-#undef DECLARE_LIBBPF_OPTS
-
-// MSVC initializes other fields to zero.
-#define DECLARE_LIBBPF_OPTS(TYPE, NAME, ...) \
-    struct TYPE NAME = {.sz = sizeof(struct TYPE), __VA_ARGS__}
-#endif
 
 #include "cfg.h"
 #include "main.h"
@@ -1573,7 +1566,9 @@ static int load_with_options(int argc, char **argv, bool first_prog_only)
 	struct bpf_map *map;
 	const char *pinfile;
 	unsigned int i, j;
+#ifdef HAVE_PROG_IFINDEX
 	__u32 ifindex = 0;
+#endif
 	const char *file;
 	int idx, err;
 
@@ -1668,7 +1663,7 @@ static int load_with_options(int argc, char **argv, bool first_prog_only)
 			old_map_fds++;
 		}
 #endif // __linux__
-#ifdef IF_NAMESIZE
+#ifdef HAVE_PROG_IFINDEX
 		else if (is_prefix(*argv, "dev")) {
 			NEXT_ARG();
 
@@ -1728,7 +1723,7 @@ static int load_with_options(int argc, char **argv, bool first_prog_only)
 				goto err_close_obj;
 		}
 
-#ifdef IF_NAMESIZE
+#ifdef HAVE_PROG_IFINDEX
 		bpf_program__set_ifindex(pos, ifindex);
 #endif
 		bpf_program__set_type(pos, prog_type);
@@ -2466,7 +2461,7 @@ static int do_help(int argc, char **argv)
 		"       %1$s %2$s pin   PROG FILE\n"
 		"       %1$s %2$s { load | loadall } OBJ  PATH \\\n"
 		"                         [type TYPE]"
-#ifdef IF_NAMESIZE
+#ifdef HAVE_PROG_IFINDEX
 		" [dev NAME]"
 #endif
 		" \\\n"
@@ -2499,23 +2494,21 @@ static int do_help(int argc, char **argv)
 		"                 lwt_seg6local | sockops | sk_skb | sk_msg | lirc_mode2 |\n"
 		"                 sk_reuseport | flow_dissector |"
 #ifdef HAVE_CGROUP_SUPPORT
-        " cgroup/sysctl |"
+		" cgroup/sysctl |"
 #endif
-        "\n"
-#ifdef HAVE_CGROUP_SUPPORT
+		"\n"
 		"                 cgroup/bind4 | cgroup/bind6 | cgroup/post_bind4 |\n"
 		"                 cgroup/post_bind6 | cgroup/connect4 | cgroup/connect6 |\n"
 		"                 cgroup/getpeername4 | cgroup/getpeername6 |\n"
 		"                 cgroup/getsockname4 | cgroup/getsockname6 | cgroup/sendmsg4 |\n"
 		"                 cgroup/sendmsg6 | cgroup/recvmsg4 | cgroup/recvmsg6 |\n"
 		"                 cgroup/getsockopt | cgroup/setsockopt | cgroup/sock_release |\n"
-#endif
 		"                 struct_ops | fentry | fexit | freplace | sk_lookup "
 #endif
 #ifdef _WIN32
-        "bind | xdp "
+		"bind | cgroup/connect4 | cgroup/connect6 | xdp "
 #endif
-        "}\n"
+		"}\n"
 #ifdef __linux__
 		"       ATTACH_TYPE := { sk_msg_verdict | sk_skb_verdict | sk_skb_stream_verdict |\n"
 		"                        sk_skb_stream_parser | flow_dissector }\n"

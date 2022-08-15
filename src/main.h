@@ -20,6 +20,7 @@
 #define HAVE_PROG_MAP_IDS 1
 #define HAVE_BPFFS_SUPPORT 1
 #define HAVE_CGROUP_SUPPORT 1
+#define HAVE_PROG_IFINDEX 1
 #endif
 #ifdef _MSC_VER
 #define __maybe_unused

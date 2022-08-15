@@ -797,10 +797,8 @@ static int do_help(int argc, char **argv)
 	}
 
 	fprintf(stderr,
-		"Usage: "
-		          "%1$s %2$s { show | list } [dev <devname>]\n"
-		"       "
-		          "%1$s %2$s attach ATTACH_TYPE PROG dev <devname> [ overwrite ]\n"
+		"Usage: %1$s %2$s { show | list } [dev <devname>]\n"
+		"       %1$s %2$s attach ATTACH_TYPE PROG dev <devname> [ overwrite ]\n"
 		"       %1$s %2$s detach ATTACH_TYPE dev <devname>\n"
 		"       %1$s %2$s help\n"
 		"\n"

@@ -5,6 +5,8 @@
 #include <windows.h>
 #include <netioapi.h>
 
+#define round_up(value, increment) increment*((value + increment - 1) / increment)
+
 char*
 dirname(char* path);
 

@@ -75,7 +75,7 @@ static int do_help(int argc, char **argv)
 		" | cgroup"
 #endif
 #ifdef __linux__
-        " | perf"
+		" | perf"
 #endif
 		" | net"
 #ifdef __linux__

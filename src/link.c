@@ -158,13 +158,17 @@ static int show_link_close_json(int fd, struct bpf_link_info *info)
 					   json_wtr);
 		break;
 #endif
-#ifdef BPF_LINK_TYPE_CGROUP
 	case BPF_LINK_TYPE_CGROUP:
 		jsonw_lluint_field(json_wtr, "cgroup_id",
 				   info->cgroup.cgroup_id);
-		show_link_attach_type_json(info->cgroup.attach_type, json_wtr);
-		break;
+		show_link_attach_type_json(
+#ifndef _WIN32
+			info->cgroup.attach_type,
+#else
+			info->attach_type,
 #endif
+			json_wtr);
+		break;
 #ifdef BPF_LINK_TYPE_ITER
 	case BPF_LINK_TYPE_ITER:
 		show_iter_json(info, json_wtr);
@@ -177,11 +181,15 @@ static int show_link_close_json(int fd, struct bpf_link_info *info)
 		show_link_attach_type_json(info->netns.attach_type, json_wtr);
 		break;
 #endif
-#ifdef BPF_LINK_TYPE_PLAIN
-        case BPF_LINK_TYPE_PLAIN:
-            show_link_attach_type_json(info->plain.attach_type, json_wtr);
-            break;
+    case BPF_LINK_TYPE_PLAIN:
+        show_link_attach_type_json(
+#ifndef _WIN32
+			info->plain.attach_type,
+#else
+			info->attach_type,
 #endif
+			json_wtr);
+        break;
 	default:
 		break;
 	}
@@ -215,7 +223,7 @@ static void show_link_header_plain(struct bpf_link_info *info)
 	if (link_type_str)
 		printf("%s  ", link_type_str);
 	else
-		printf("type %d  ", info->type);
+		printf("type %u  ", info->type);
 
 	printf("prog %u  ", info->prog_id);
 }
@@ -274,12 +282,16 @@ static int show_link_close_plain(int fd, struct bpf_link_info *info)
 		show_link_attach_type_plain(info->tracing.attach_type);
 		break;
 #endif
-#ifdef BPF_LINK_TYPE_CGROUP
 	case BPF_LINK_TYPE_CGROUP:
 		printf("\n\tcgroup_id %zu  ", (size_t)info->cgroup.cgroup_id);
-		show_link_attach_type_plain(info->cgroup.attach_type);
-		break;
+		show_link_attach_type_plain(
+#ifndef _WIN32
+			info->cgroup.attach_type
+#else
+			info->attach_type
 #endif
+		);
+		break;
 #ifdef BPF_LINK_TYPE_ITER
 	case BPF_LINK_TYPE_ITER:
 		show_iter_plain(info);
@@ -291,11 +303,15 @@ static int show_link_close_plain(int fd, struct bpf_link_info *info)
 		show_link_attach_type_plain(info->netns.attach_type);
 		break;
 #endif
-#ifdef BPF_LINK_TYPE_PLAIN
-        case BPF_LINK_TYPE_PLAIN:
-            show_link_attach_type_plain(info->plain.attach_type);
-            break;
+	case BPF_LINK_TYPE_PLAIN:
+		show_link_attach_type_plain(
+#ifndef _WIN32
+			info->plain.attach_type
+#else
+			info->attach_type
 #endif
+		);
+        break;
 	default:
 		break;
 	}

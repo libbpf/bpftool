@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #ifdef _WIN32
-#include <io.h>
+#include "windows/platform.h"
 #endif
 #include <linux/err.h>
 #ifdef __linux__
@@ -27,10 +27,6 @@
 #include <bpf/btf.h>
 #endif
 #include <bpf/hashmap.h>
-#ifdef _MSC_VER
-#define round_up(value, increment) \
-        increment * ((value + increment - 1) / increment)
-#endif
 
 #include "json_writer.h"
 #include "main.h"
@@ -1375,9 +1371,7 @@ static int do_create(int argc, char **argv)
 			if (parse_u32_arg(&argc, &argv, &attr.map_flags,
 					  "flags"))
 				goto exit;
-		}
-#ifdef IF_NAMESIZE
-		else if (is_prefix(*argv, "dev")) {
+		} else if (is_prefix(*argv, "dev")) {
 			NEXT_ARG();
 
 			if (attr.map_ifindex) {
@@ -1385,16 +1379,18 @@ static int do_create(int argc, char **argv)
 				goto exit;
 			}
 
+#ifdef _WIN32
+            attr.map_ifindex = if_stringtoindex(*argv);
+#else
 			attr.map_ifindex = if_nametoindex(*argv);
+#endif
 			if (!attr.map_ifindex) {
 				p_err("unrecognized netdevice '%s': %s",
 				      *argv, strerror(errno));
 				goto exit;
 			}
 			NEXT_ARG();
-		}
-#endif
-		else if (is_prefix(*argv, "inner_map")) {
+		} else if (is_prefix(*argv, "inner_map")) {
 			struct bpf_map_info info = {0};
 			__u32 len = sizeof(info);
 			int inner_map_fd;

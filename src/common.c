@@ -607,7 +607,6 @@ unsigned int get_possible_cpus(void)
 	return cpus;
 }
 
-#ifdef IF_NAMESIZE
 static char *
 ifindex_to_name_ns(__u32 ifindex, __u32 ns_dev, __u32 ns_ino, char *buf)
 {
@@ -625,7 +624,6 @@ ifindex_to_name_ns(__u32 ifindex, __u32 ns_dev, __u32 ns_ino, char *buf)
 
 	return if_indextoname(ifindex, buf);
 }
-#endif
 
 static int read_sysfs_hex_int(char *path)
 {
@@ -665,7 +663,6 @@ static int read_sysfs_netdev_hex_int(char *devname, const char *entry_name)
 	return read_sysfs_hex_int(full_path);
 }
 
-#ifdef IF_NAMESIZE
 const char *
 ifindex_to_bfd_params(__u32 ifindex, __u64 ns_dev, __u64 ns_ino,
 		      const char **opt)
@@ -733,7 +730,6 @@ void print_dev_json(__u32 ifindex, __u64 ns_dev, __u64 ns_inode)
 		jsonw_string_field(json_wtr, "ifname", name);
 	jsonw_end_object(json_wtr);
 }
-#endif // IF_NAMESIZE
 
 int parse_u32_arg(int *argc, char ***argv, __u32 *val, const char *what)
 {
