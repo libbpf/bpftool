@@ -14,16 +14,15 @@
 #include <bpf/libbpf.h>
 #ifdef __linux__
 #include <net/if.h>
-#ifdef __linux__
 #include <linux/rtnetlink.h>
 #include <linux/socket.h>
 #include <linux/tc_act/tc_bpf.h>
-#endif
 #include <sys/socket.h>
 #endif
 #ifdef _WIN32
 #include <winsock2.h>
 #include <netioapi.h>
+#include <io.h>
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -547,7 +546,7 @@ static int net_parse_dev(int *argc, char ***argv)
 			if (MultiByteToWideChar(CP_ACP, 0, **argv, -1, if_alias, sizeof(if_alias) / sizeof(*if_alias)) > 0) {
 				NET_LUID if_luid;
 				if (ConvertInterfaceAliasToLuid(if_alias, &if_luid) == ERROR_SUCCESS) {
-					ConvertInterfaceLuidToIndex(&if_luid, &ifindex);
+					ConvertInterfaceLuidToIndex(&if_luid, (NET_IFINDEX*)&ifindex);
 				}
 			}
 		}
@@ -684,7 +683,9 @@ static int do_detach(int argc, char **argv)
 
 static int do_show(int argc, char **argv)
 {
+#ifdef BPF_FLOW_DISSECTOR
 	struct bpf_attach_info attach_info = {0};
+#endif
 	int i, ret = 0, filter_idx = -1;
 	struct bpf_netdev_t dev_array;
 #ifdef AF_NETLINK

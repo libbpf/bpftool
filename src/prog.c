@@ -66,6 +66,7 @@ enum dump_mode {
 	DUMP_XLATED,
 };
 
+#ifdef __linux__
 static const bool attach_types[] = {
 	[BPF_SK_SKB_STREAM_PARSER] = true,
 	[BPF_SK_SKB_STREAM_VERDICT] = true,
@@ -74,6 +75,7 @@ static const bool attach_types[] = {
 	[BPF_FLOW_DISSECTOR] = true,
 	[__MAX_BPF_ATTACH_TYPE] = false,
 };
+#endif
 
 /* Textual representations traditionally used by the program and kept around
  * for the sake of backwards compatibility.
@@ -1700,7 +1702,9 @@ static int load_with_options(int argc, char **argv, bool first_prog_only)
 		}
 	}
 
+#ifdef __linux__
 	set_max_rlimit();
+#endif
 
 	if (verifier_logs)
 		/* log_level1 + log_level2 + stats, but not stable UAPI */

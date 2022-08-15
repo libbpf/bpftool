@@ -27,12 +27,12 @@
 #include <sys/stat.h>
 #ifdef __linux__
 #include <sys/vfs.h>
-#endif
 
 #include <linux/filter.h>
 #include <linux/limits.h>
 #include <linux/magic.h>
 #include <linux/unistd.h>
+#endif
 
 #include <bpf/bpf.h>
 #include <bpf/hashmap.h>
@@ -1117,6 +1117,7 @@ bool equal_fn_for_key_as_id(const void *k1, const void *k2, void *ctx)
 
 const char *bpf_attach_type_input_str(enum bpf_attach_type t)
 {
+#ifdef __linux__
 	switch (t) {
 	case BPF_CGROUP_INET_INGRESS:		return "ingress";
 	case BPF_CGROUP_INET_EGRESS:		return "egress";
@@ -1149,4 +1150,7 @@ const char *bpf_attach_type_input_str(enum bpf_attach_type t)
 	case BPF_SK_REUSEPORT_SELECT_OR_MIGRATE:	return "sk_skb_reuseport_select_or_migrate";
 	default:	return libbpf_bpf_attach_type_str(t);
 	}
+#else
+    return libbpf_bpf_attach_type_str(t);
+#endif
 }

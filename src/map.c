@@ -1418,7 +1418,9 @@ static int do_create(int argc, char **argv)
 		goto exit;
 	}
 
+#ifdef __linux__
 	set_max_rlimit();
+#endif
 
 	fd = bpf_map_create(map_type, map_name, key_size, value_size, max_entries, &attr);
 	if (fd < 0) {
