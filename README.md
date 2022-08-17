@@ -19,7 +19,7 @@ BPF/bpftool usage and questions
 
 Please check out [the manual pages](docs) for documentation about bpftool. A
 number of example invocations are also displayed in [this blog
-post](https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git/tree/tools/bpf/bpftool).
+post](https://qmonnet.github.io/whirl-offload/2021/09/23/bpftool-features-thread/).
 
 All general BPF questions, including kernel functionality, bpftool features and
 usage, should be sent to bpf@vger.kernel.org mailing list. You can subscribe to
