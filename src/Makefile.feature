@@ -49,12 +49,24 @@ DISASSEMBLER_PROBE += '	return 0;'
 DISASSEMBLER_PROBE += '}'
 
 define disassembler_build
-  $(shell printf '%b\n' $(DISASSEMBLER_PROBE) | \
+  $(shell printf '%b\n' $(1) | \
     $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - -lbfd -lopcodes -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
 
-feature-disassembler-four-args := $(findstring 1, $(call disassembler_build))
+feature-disassembler-four-args := \
+    $(findstring 1, $(call disassembler_build,$(DISASSEMBLER_PROBE)))
+
+### feature-disassembler-init-styled
+
+DISASSEMBLER_STYLED_PROBE := '$(pound)include <dis-asm.h>\n'
+DISASSEMBLER_STYLED_PROBE += 'int main(void) {'
+DISASSEMBLER_STYLED_PROBE += '	init_disassemble_info(NULL, 0, NULL, NULL);'
+DISASSEMBLER_STYLED_PROBE += '	return 0;'
+DISASSEMBLER_STYLED_PROBE += '}'
+
+feature-disassembler-init-styled := \
+    $(findstring 1, $(call disassembler_build,$(DISASSEMBLER_STYLED_PROBE)))
 
 ### feature-libcap
 
