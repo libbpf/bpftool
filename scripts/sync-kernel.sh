@@ -53,6 +53,7 @@ PATH_MAP=(									\
 	[${BPFTOOL_SRC_DIR}/Documentation]=docs					\
 	[kernel/bpf/disasm.c]=src/kernel/bpf/disasm.c				\
 	[kernel/bpf/disasm.h]=src/kernel/bpf/disasm.h				\
+	[tools/include/tools/dis-asm-compat.h]=include/tools/dis-asm-compat.h	\
 	[tools/include/uapi/asm-generic/bitsperlong.h]=include/uapi/asm-generic/bitsperlong.h	\
 	[tools/include/uapi/linux/bpf_common.h]=include/uapi/linux/bpf_common.h	\
 	[tools/include/uapi/linux/bpf.h]=include/uapi/linux/bpf.h		\
