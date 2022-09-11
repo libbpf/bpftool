@@ -219,12 +219,11 @@ static void print_boot_time(__u64 nsecs, char *buf, unsigned int size)
 }
 #endif
 
-#ifdef HAVE_PROG_MAP_IDS
 static void show_prog_maps(int fd, __u32 num_maps)
 {
 	struct bpf_prog_info info = {0};
 	__u32 len = sizeof(info);
-	__u32 map_ids[num_maps];
+	__u32* map_ids = _alloca(num_maps * sizeof(__u32));
 	unsigned int i;
 	int err;
 
@@ -248,9 +247,7 @@ static void show_prog_maps(int fd, __u32 num_maps)
 			       i == info.nr_map_ids - 1 ? "" : ",");
 	}
 }
-#endif
 
-#ifdef HAVE_PROG_MAP_IDS
 static void *find_metadata(int prog_fd, struct bpf_map_info *map_info)
 {
 	struct bpf_prog_info prog_info;
@@ -332,7 +329,6 @@ free_map_ids:
 	free(map_ids);
 	return value;
 }
-#endif
 
 static bool has_metadata_prefix(const char *s)
 {
@@ -527,10 +523,8 @@ static void print_prog_json(struct bpf_prog_info *info, int fd)
 	free(memlock);
 #endif
 
-#ifdef HAVE_PROG_MAP_IDS
 	if (info->nr_map_ids)
 		show_prog_maps(fd, info->nr_map_ids);
-#endif
 
 #ifdef HAVE_BTF_SUPPORT
 	if (info->btf_id)
@@ -625,10 +619,8 @@ static void print_prog_plain(struct bpf_prog_info *info, int fd)
 	free(memlock);
 #endif
 
-#ifdef HAVE_PROG_MAP_IDS
 	if (info->nr_map_ids)
 		show_prog_maps(fd, info->nr_map_ids);
-#endif
 
 	if (!hashmap__empty(prog_table)) {
 		struct hashmap_entry *entry;
