@@ -223,7 +223,10 @@ static void show_prog_maps(int fd, __u32 num_maps)
 {
 	struct bpf_prog_info info = {0};
 	__u32 len = sizeof(info);
-	__u32* map_ids = _alloca(num_maps * sizeof(__u32));
+#ifdef _MSC_VER
+#pragma warning(suppress : 6255)
+#endif
+	__u32* map_ids = alloca(num_maps * sizeof(__u32));
 	unsigned int i;
 	int err;
 

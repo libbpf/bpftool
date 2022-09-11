@@ -27,6 +27,7 @@
 #define __weak
 typedef int64_t ssize_t;
 #define close _close
+#define alloca _alloca
 
 #define fprintf _fprintf_p
 #undef HAVE_DEQUEUE_SUPPORT
