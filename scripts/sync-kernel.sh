@@ -81,7 +81,7 @@ BPFTOOL_TREE_FILTER+="git mv -kf ${BPFTOOL_SRC_DIR} __bpftool/${PATH_MAP[${BPFTO
 BPFTOOL_TREE_FILTER+="git mv -kf __bpftool/src/bash-completion __bpftool/bash-completion && "$'\\\n'
 BPFTOOL_TREE_FILTER+="git mv -kf __bpftool/src/Documentation __bpftool/docs && "$'\\\n'
 
-BPFTOOL_TREE_FILTER+="mkdir -p __bpftool/include/uapi/asm-generic __bpftool/include/uapi/linux/tc_act __bpftool/src/kernel/bpf && "$'\\\n'
+BPFTOOL_TREE_FILTER+="mkdir -p __bpftool/include/tools __bpftool/include/uapi/asm-generic __bpftool/include/uapi/linux/tc_act __bpftool/src/kernel/bpf && "$'\\\n'
 for p in "${!PATH_MAP[@]}"; do
 	case ${p} in
 		${BPFTOOL_SRC_DIR}*)
