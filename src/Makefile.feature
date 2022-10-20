@@ -97,7 +97,7 @@ feature_print_status = $(eval $(print_status)) $(info $(MSG))
 
 $(call feature_print_status,$(HAS_LIBBFD),libbfd)
 
-$(foreach feature,$(filter-out libbfd,$(FEATURE_DISPLAY)), \
+$(foreach feature,$(filter-out libbfd%,$(FEATURE_DISPLAY)), \
   $(call feature_print_status,$(feature-$(feature)),$(feature)))
 
 CFLAGS := $(CFLAGS_BACKUP)
