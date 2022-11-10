@@ -1,0 +1,36 @@
+name: docker
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - master
+
+jobs:
+  dockerimage:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Build bpftool container image
+        uses: docker/build-push-action@v3
+        with:
+          push: false
+          tags: bpftool:latest
+
+      - name: Test bpftool container image
+        run: |
+          docker run --rm --privileged --pid=host bpftool version
+          docker run --rm --privileged --pid=host bpftool prog
+          docker run --rm --privileged --pid=host bpftool map
+
+      - name: Lint Docker image
+        uses: luke142367/Docker-Lint-Action@5c4c86226f39785a66827bbc2e322600c9afa3a9
+        with:
+          target: Dockerfile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
