@@ -23,7 +23,7 @@ LIBBFD_PROBE += '}'
 
 define libbfd_build
   $(shell printf '%b\n' $(LIBBFD_PROBE) | \
-    $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - $(1) -S -o - >/dev/null 2>&1 \
+    $(CC) $(CFLAGS) -Wall -Werror -x c - $(1) -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
 
@@ -50,7 +50,7 @@ DISASSEMBLER_PROBE += '}'
 
 define disassembler_build
   $(shell printf '%b\n' $(1) | \
-    $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - -lbfd -lopcodes -S -o - >/dev/null 2>&1 \
+    $(CC) $(CFLAGS) -Wall -Werror -x c - -lbfd -lopcodes -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
 
@@ -78,7 +78,7 @@ LIBCAP_PROBE += '}'
 
 define libcap_build
   $(shell printf '%b\n' $(LIBCAP_PROBE) | \
-    $(CC) $(CFLAGS) -Wall -Werror $(LDFLAGS) -x c - -lcap -S -o - >/dev/null 2>&1 \
+    $(CC) $(CFLAGS) -Wall -Werror -x c - -lcap -S -o - >/dev/null 2>&1 \
     && echo 1)
 endef
 
