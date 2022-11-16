@@ -84,6 +84,25 @@ endef
 
 feature-libcap := $(findstring 1, $(call libcap_build))
 
+### feature-llvm
+
+LLVM_PROBE := '$(pound)include <llvm-c/Core.h>\n'
+LLVM_PROBE += '$(pound)include <llvm-c/TargetMachine.h>\n'
+LLVM_PROBE += 'int main(void) {'
+LLVM_PROBE += '	char *triple = LLVMNormalizeTargetTriple("");'
+LLVM_PROBE += '	LLVMDisposeMessage(triple);'
+LLVM_PROBE += '	return 0;'
+LLVM_PROBE += '}'
+
+define llvm_build
+  $(shell printf '%b\n' $(LLVM_PROBE) | \
+  $(CC) $(CFLAGS) $$($(LLVM_CONFIG) --cflags) \
+    -Wall -Werror -x c - -S -o - >/dev/null 2>&1 \
+    && echo 1)
+endef
+
+feature-llvm := $(findstring 1, $(call llvm_build))
+
 ### Print detection results
 
 define print_status

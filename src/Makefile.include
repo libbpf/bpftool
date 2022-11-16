@@ -7,6 +7,7 @@ endif
 
 LLVM_VERSION ?=
 CLANG        ?= clang$(LLVM_VERSION)
+LLVM_CONFIG  ?= llvm-config$(LLVM_VERSION)
 LLVM_STRIP   ?= llvm-strip$(LLVM_VERSION)
 
 ifneq ($(LLVM),)
