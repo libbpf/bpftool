@@ -242,7 +242,7 @@ if [[ "${SKIP_LIBBPF_UPDATE:-0}" -ne 1 ]]; then
 	cd_to "${BPFTOOL_REPO}"
 	if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
 		git add libbpf
-		git commit -m 'sync: Update libbpf submodule' \
+		git commit --signoff -m 'sync: Update libbpf submodule' \
 			-m "\
 Pull latest libbpf from mirror.
 Libbpf version: ${LIBBPF_VERSION}
@@ -328,7 +328,7 @@ if (("${COMMIT_CNT}" <= 0)); then
 fi
 
 # Exclude baseline commit and generate nice cover letter with summary
-git format-patch "${SQUASH_BASE_TAG}".."${SQUASH_TIP_TAG}" --cover-letter -o "${TMP_DIR}"/patches
+git format-patch --no-signature "${SQUASH_BASE_TAG}".."${SQUASH_TIP_TAG}" --cover-letter -o "${TMP_DIR}"/patches
 
 # Now is time to re-apply bpftool-related linux patches to bpftool repo
 cd_to "${BPFTOOL_REPO}"
@@ -356,7 +356,7 @@ Baseline bpf-next commit:   ${BASELINE_COMMIT}\n\
 Checkpoint bpf-next commit: ${TIP_COMMIT}\n\
 Baseline bpf commit:        ${BPF_BASELINE_COMMIT}\n\
 Checkpoint bpf commit:      ${BPF_TIP_COMMIT}/" |				      \
-git commit --file=-
+git commit --signoff --file=-
 
 echo "SUCCESS! ${COMMIT_CNT} commits synced."
 
