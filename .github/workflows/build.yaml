@@ -6,9 +6,6 @@ on:
     branches:
       - master
 
-env:
-  FEATURES: ".libbfd and .libbpf_strict"
-
 jobs:
   build:
     strategy:
@@ -16,6 +13,8 @@ jobs:
       matrix:
         os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
+    env:
+      FEATURES: .libbfd and .libbpf_strict
 
     steps:
       - name: Checkout repository
@@ -34,6 +33,11 @@ jobs:
                   FEATURES="${FEATURES} and .skeletons"
                   ;;
               esac
+
+      - name: Adjust required features
+        if: ${{ matrix.os != 'ubuntu-18.04' }}
+        run: |
+          echo "FEATURES=${FEATURES} and .skeletons" >> "${GITHUB_ENV}"
 
       - name: Build bpftool
         run: |
