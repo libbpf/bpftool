@@ -14,7 +14,7 @@ jobs:
         os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     env:
-      FEATURES: .libbfd and .libbpf_strict
+      FEATURES: .llvm and .libbpf_strict
 
     steps:
       - name: Checkout repository
@@ -26,20 +26,21 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-              clang libbfd-dev libcap-dev libelf-dev python3-docutils
-          case "${{ matrix.os }}" in
-              ubuntu-22.04)
-                  sudo apt-get install -y llvm
-                  FEATURES="${FEATURES} and .skeletons"
-                  ;;
-              esac
+              libbfd-dev libcap-dev libelf-dev python3-docutils
+          # clang/LLVM are already installed, but we're missing some aliases.
+          CLANG_VERSION="$(echo '__clang_major__' | clang -E - | tail -n 1)"
+          sudo update-alternatives \
+              --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-"${CLANG_VERSION}" 50 \
+              --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-"${CLANG_VERSION}" \
+              --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-"${CLANG_VERSION}"
+          echo "CLANG_VERSION=${CLANG_VERSION}" >> "${GITHUB_ENV}"
 
       - name: Adjust required features
         if: ${{ matrix.os != 'ubuntu-18.04' }}
         run: |
           echo "FEATURES=${FEATURES} and .skeletons" >> "${GITHUB_ENV}"
 
-      - name: Build bpftool
+      - name: Build bpftool (default LLVM disassembler)
         run: |
           make -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
@@ -55,6 +56,16 @@ jobs:
           ./src/bpftool -p version | \
               tee /dev/stderr | \
               jq --exit-status ".features | ${FEATURES}"
+
+      - name: Build bpftool, with fallback to libbfd disassembler
+        run: |
+          sudo apt-get remove -y llvm-"${CLANG_VERSION}"-dev
+          make -C src clean
+          make -j -C src V=1
+          ./src/bpftool 2>&1 | grep -q Usage
+          ./src/bpftool -p version | \
+              tee /dev/stderr | \
+              jq --exit-status ".features | .libbfd and (.llvm | not)"
 
       - name: Build bpftool's documentation
         run: |
