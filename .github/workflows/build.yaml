@@ -37,7 +37,7 @@ jobs:
 
       - name: Build bpftool
         run: |
-          make -j -C src
+          make -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
@@ -46,7 +46,7 @@ jobs:
       - name: Build bpftool, with clang
         run: |
           make -C src clean
-          LLVM=1 make -j -C src
+          LLVM=1 make -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
