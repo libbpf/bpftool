@@ -14,7 +14,7 @@ jobs:
         os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     env:
-      FEATURES: .llvm and .libbpf_strict
+      FEATURES: .llvm
 
     steps:
       - name: Checkout repository
