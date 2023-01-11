@@ -9,12 +9,15 @@ endif
 
 ### feature-clang-bpf-co-re
 
+ifneq ($(findstring clang-bpf-co-re,$(FEATURE_TESTS)),)
 feature-clang-bpf-co-re := \
   $(shell printf '%s\n' 'struct s { int i; } __attribute__((preserve_access_index)); struct s foo;' | \
     $(CLANG) -g -target bpf -S -o - -x c - 2>/dev/null | grep -q BTF_KIND_VAR && echo 1)
+endif # clang-bpf-co-re
 
 ### feature-libbfd
 
+ifneq ($(findstring libbfd,$(FEATURE_TESTS)),)
 LIBBFD_PROBE := '$(pound)include <bfd.h>\n'
 LIBBFD_PROBE += 'int main(void) {'
 LIBBFD_PROBE += '	bfd_demangle(0, 0, 0);'
@@ -39,9 +42,11 @@ ifneq ($(feature-libbfd),1)
 endif
 HAS_LIBBFD := $(findstring 1, \
   $(feature-libbfd)$(feature-libbfd-liberty)$(feature-libbfd-liberty-z))
+endif # libbfd
 
 ### feature-disassembler-four-args
 
+ifneq ($(findstring disassembler-four-args,$(FEATURE_TESTS)),)
 DISASSEMBLER_PROBE := '$(pound)include <dis-asm.h>\n'
 DISASSEMBLER_PROBE += 'int main(void) {'
 DISASSEMBLER_PROBE += '	disassembler((enum bfd_architecture)0, 0, 0, NULL);'
@@ -56,9 +61,11 @@ endef
 
 feature-disassembler-four-args := \
     $(findstring 1, $(call disassembler_build,$(DISASSEMBLER_PROBE)))
+endif # disassembler-four-args
 
 ### feature-disassembler-init-styled
 
+ifneq ($(findstring disassembler-init-styled,$(FEATURE_TESTS)),)
 DISASSEMBLER_STYLED_PROBE := '$(pound)include <dis-asm.h>\n'
 DISASSEMBLER_STYLED_PROBE += 'int main(void) {'
 DISASSEMBLER_STYLED_PROBE += '	init_disassemble_info(NULL, 0, NULL, NULL);'
@@ -67,9 +74,11 @@ DISASSEMBLER_STYLED_PROBE += '}'
 
 feature-disassembler-init-styled := \
     $(findstring 1, $(call disassembler_build,$(DISASSEMBLER_STYLED_PROBE)))
+endif # disassembler-init-styled
 
 ### feature-libcap
 
+ifneq ($(findstring libcap,$(FEATURE_TESTS)),)
 LIBCAP_PROBE := '$(pound)include <sys/capability.h>\n'
 LIBCAP_PROBE += 'int main(void) {'
 LIBCAP_PROBE += '	cap_free(0);'
@@ -83,9 +92,11 @@ define libcap_build
 endef
 
 feature-libcap := $(findstring 1, $(call libcap_build))
+endif # libcap
 
 ### feature-llvm
 
+ifneq ($(findstring llvm,$(FEATURE_TESTS)),)
 LLVM_PROBE := '$(pound)include <llvm-c/Core.h>\n'
 LLVM_PROBE += '$(pound)include <llvm-c/TargetMachine.h>\n'
 LLVM_PROBE += 'int main(void) {'
@@ -102,6 +113,7 @@ define llvm_build
 endef
 
 feature-llvm := $(findstring 1, $(call llvm_build))
+endif # llvm
 
 ### Print detection results
 
