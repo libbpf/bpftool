@@ -423,6 +423,24 @@ int get_fd_type(int fd)
 	else if (strstr(buf, "bpf-link"))
 		return BPF_OBJ_LINK;
 #endif
+#ifdef _WIN32
+    union {
+	    struct bpf_map_info map;
+	    struct bpf_prog_info prog;
+	    struct bpf_link_info link;
+    } pinned_info;
+	__u32 len = sizeof(pinned_info);
+
+	memset(&pinned_info, 0, sizeof(pinned_info));
+	if (bpf_obj_get_info_by_fd(fd, &pinned_info, &len) == 0) {
+        if (len == sizeof(struct bpf_map_info))
+            return BPF_OBJ_MAP;
+        if (len == sizeof(struct bpf_prog_info))
+            return BPF_OBJ_PROG;
+        if (len == sizeof(struct bpf_link_info))
+            return BPF_OBJ_LINK;
+    }
+#endif
 
 	return BPF_OBJ_UNKNOWN;
 }
