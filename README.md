@@ -101,14 +101,33 @@ $ cd src
 $ make V=1
 ```
 
-Additional `CFLAGS` can be passed to the command line if required. For example,
-we can create a static build with the following commands (but note that this
-does not work out-of-the-box when linking with libbfd):
+Additional compilation flags can be passed to the command line if required. For
+example, we can create a static build with the following commands:
 
 ```console
 $ cd src
-$ CFLAGS=--static make
+$ EXTRA_CFLAGS=--static make
 ```
+
+Note that to use the LLVM disassembler with static builds, we need a static
+version of the LLVM library installed on the system:
+
+1.  Clone and build the LLVM libraries locally.
+
+    ```console
+    $ git clone https://github.com/llvm/llvm-project.git
+    $ mkdir llvm_build
+    $ cmake -S llvm-project/llvm -B llvm_build -DCMAKE_BUILD_TYPE=Release
+    $ make -j -C llvm_build llvm-config llvm-libraries
+    ```
+
+2.  Build bpftool with `EXTRA_CFLAGS` set to `--static`, and by passing the path to
+    the relevant `llvm-config`.
+
+    ```console
+    $ cd bpftool
+    $ LLVM_CONFIG=../llvm_build/bin/llvm-config EXTRA_CFLAGS=--static make -j
+    ```
 
 ### Build bpftool's man pages
 
