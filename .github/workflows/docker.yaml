@@ -1,7 +1,7 @@
 name: docker
 
 on:
-  pull_request_target: {}
+  pull_request: {}
   push:
     branches:
       - master
@@ -29,8 +29,6 @@ jobs:
           docker run --rm --privileged --pid=host bpftool map
 
       - name: Lint Docker image
-        uses: luke142367/Docker-Lint-Action@5c4c86226f39785a66827bbc2e322600c9afa3a9
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf
         with:
-          target: Dockerfile
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: Dockerfile

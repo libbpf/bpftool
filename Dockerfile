@@ -3,6 +3,8 @@
 # And then use it:
 #     $ docker run --rm -ti --privileged --pid=host bpftool prog
 
+# hadolint global ignore=DL3008
+
 FROM ubuntu:22.04 as builder
 
 RUN \
@@ -19,9 +21,9 @@ RUN \
 	rm -rf /var/lib/apt/lists/*
 
 COPY . /src
-RUN cd /src/src && \
-	make clean && \
-	make -j $(nproc)
+RUN \
+	make -C /src/src clean && \
+	make -C /src/src -j "$(nproc)"
 
 FROM ubuntu:22.04
 RUN \
