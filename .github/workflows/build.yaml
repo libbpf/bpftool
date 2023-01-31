@@ -26,7 +26,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-              libbfd-dev libcap-dev libelf-dev python3-docutils
+              libbfd-dev libcap-dev libelf-dev libiberty-dev python3-docutils
           # clang/LLVM are already installed, but we're missing some aliases.
           CLANG_VERSION="$(echo '__clang_major__' | clang -E - | tail -n 1)"
           sudo update-alternatives \
@@ -66,6 +66,18 @@ jobs:
           ./src/bpftool -p version | \
               tee /dev/stderr | \
               jq --exit-status ".features | .libbfd and (.llvm | not)"
+
+      - name: Build bpftool, with libbfd, static build
+        run: |
+          make -C src clean
+          EXTRA_CFLAGS=--static make -j -C src V=1
+          ./src/bpftool 2>&1 | grep -q Usage
+          ./src/bpftool -p version | \
+              tee /dev/stderr | \
+              jq --exit-status ".features | .libbfd and (.llvm | not)"
+          ldd ./src/bpftool 2>&1 | \
+              tee /dev/stderr | \
+              grep -q 'not a dynamic executable'
 
       - name: Build bpftool's documentation
         run: |
