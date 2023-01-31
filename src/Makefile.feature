@@ -27,7 +27,7 @@ LIBBFD_PROBE += '}'
 
 define libbfd_build
   $(shell printf '%b\n' $(LIBBFD_PROBE) | \
-    $(CC) $(CFLAGS) -Wall -Werror -x c - $(1) -S -o - >/dev/null 2>&1 \
+    $(CC) $(CFLAGS) -Wall -Werror -x c - $(1) -o /dev/null >/dev/null 2>&1 \
     && echo 1)
 endef
 
@@ -106,11 +106,25 @@ LLVM_PROBE += '	LLVMDisposeMessage(triple);'
 LLVM_PROBE += '	return 0;'
 LLVM_PROBE += '}'
 
+# We need some adjustments for the flags.
+# - $(CFLAGS) was set to parent $(EXTRA_CFLAGS) at the beginning of this file.
+# - $(EXTRA_LDFLAGS) from parent Makefile should be kept as well.
+# - Libraries to use depend on whether we have a static or shared version of
+#   LLVM, pass the llvm-config flag and adjust the list of libraries
+#   accordingly.
+FEATURE_LLVM_CFLAGS := $(CFLAGS) $(shell $(LLVM_CONFIG) --cflags 2>/dev/null)
+FEATURE_LLVM_LIBS := $(shell $(LLVM_CONFIG) --libs target 2>/dev/null)
+ifeq ($(shell $(LLVM_CONFIG) --shared-mode 2>/dev/null),static)
+  FEATURE_LLVM_LIBS += $(shell $(LLVM_CONFIG) --system-libs target 2>/dev/null)
+  FEATURE_LLVM_LIBS += -lstdc++
+endif
+FEATURE_LDFLAGS := $(EXTRA_LDFLAGS) $(shell $(LLVM_CONFIG) --ldflags 2>/dev/null)
+
 define llvm_build
   $(shell printf '%b\n' $(LLVM_PROBE) | \
-  $(CC) $(CFLAGS) $$($(LLVM_CONFIG) --cflags) \
-    -Wall -Werror -x c - -S -o - >/dev/null 2>&1 \
-    && echo 1)
+  $(CC) $(FEATURE_LLVM_CFLAGS) $(FEATURE_LDFLAGS) \
+    -Wall -Werror -x c - $(FEATURE_LLVM_LIBS) \
+    -o /dev/null >/dev/null 2>&1 && echo 1)
 endef
 
 feature-llvm := $(findstring 1, $(call llvm_build))
