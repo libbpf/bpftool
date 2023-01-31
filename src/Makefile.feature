@@ -3,6 +3,7 @@
 pound := \#
 
 CFLAGS_BACKUP := $(CFLAGS)
+CFLAGS := $(EXTRA_CFLAGS)
 ifneq ($(LLVM),)
   CFLAGS += -Wno-unused-command-line-argument
 endif
