@@ -1,7 +1,13 @@
 name: docker
 
 on:
-  pull_request: {}
+  pull_request:
+    paths:
+      - '.github/workflows/docker.yaml'
+      - 'Dockerfile'
+      - 'include/**'
+      - 'libbpf/**'
+      - 'src/**'
   push:
     branches:
       - master

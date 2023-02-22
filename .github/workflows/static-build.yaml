@@ -1,7 +1,12 @@
 name: static LLVM build
 
 on:
-  pull_request: {}
+  pull_request:
+    paths:
+      - '.github/workflows/static-build.yaml'
+      - 'include/**'
+      - 'libbpf/**'
+      - 'src/**'
   push:
     branches:
       - master
