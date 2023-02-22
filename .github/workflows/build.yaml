@@ -1,7 +1,13 @@
 name: build
 
 on:
-  pull_request: {}
+  pull_request:
+    paths:
+      - '.github/workflows/build.yaml'
+      - 'docs/**'
+      - 'include/**'
+      - 'libbpf/**'
+      - 'src/**'
   push:
     branches:
       - master

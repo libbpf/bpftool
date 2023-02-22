@@ -1,7 +1,10 @@
-name: "lint"
+name: lint
 
 on:
-  pull_request: {}
+  pull_request:
+    paths:
+      - '.github/workflows/lint.yaml'
+      - 'scripts/**'
   push:
     branches:
       - master
