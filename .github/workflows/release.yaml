@@ -70,8 +70,11 @@ jobs:
         run:  |
           docker run --platform linux/arm64 --rm -v $(pwd):/build ubuntu:22.04 \
           bash -c "apt-get update && \
-                   apt-get install -y make pkg-config libelf-dev libcap-dev clang gcc llvm binutils && \
+                   apt-get install -y make pkg-config gcc \
+                       libelf-dev libcap-dev libstdc++-11-dev zlib1g-dev && \
                    cd build/bpftool && \
+                   CLANG=../../${{ env.LLVM }}/bin/clang \
+                   LLVM_STRIP=../../${{ env.LLVM }}/bin/llvm-strip \
                    LLVM_CONFIG=../../${{ env.LLVM }}/bin/llvm-config EXTRA_CFLAGS=--static make -j V=1 -C src && \
                    strip src/bpftool"
 
