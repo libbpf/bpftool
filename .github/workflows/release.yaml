@@ -7,8 +7,9 @@ on:
 
 env:
   # https://github.com/llvm/llvm-project/releases/tag/llvmorg-15.0.0
+  LLVM_URL_PREFIX: https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.0
   LLVM_arm64: clang+llvm-15.0.0-aarch64-linux-gnu
-  LLVM_amd64: clang+llvm-15.0.0-x86_64-linux-gnu-rhel-8.4 
+  LLVM_amd64: clang+llvm-15.0.0-x86_64-linux-gnu-rhel-8.4
 
 jobs:
   build:
@@ -34,26 +35,28 @@ jobs:
         env:
           LLVM: ${{ env[format('LLVM_{0}', matrix.arch)] }}
         run: |
-          curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.0/${{ env.LLVM }}.tar.xz -O
-          tar xvf ${{ env.LLVM }}.tar.xz
+          curl -L -O "${{ env.LLVM_URL_PREFIX}}/${{ env.LLVM }}.tar.xz"
+          tar -xvf "${{ env.LLVM }}.tar.xz"
 
       - name: Checkout bpftool code
         uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
         with:
           submodules: recursive
+          # Create a new directory to avoid wiping out LLVM on bpftool checkout
           path: 'bpftool'
 
       - name: Build static bpftool natively for amd64
         if: matrix.arch == 'amd64'
         working-directory: 'bpftool'
         env:
-          LLVM: ${{ env[format('LLVM_{0}', matrix.arch)] }}
-        run: make -j $(nproc) -C src V=1 \ 
+          LLVM_PATH: ${{ env[format('LLVM_{0}', matrix.arch)] }}
+        run: |
           EXTRA_CFLAGS=--static \
-          LLVM_CONFIG="${GITHUB_WORKSPACE}/${{ env.LLVM }}/bin/llvm-config" \
-          LLVM_STRIP="${GITHUB_WORKSPACE}/${{ env.LLVM }}/bin/llvm-strip" \
-          HOSTAR="${GITHUB_WORKSPACE}/${{ env.LLVM }}/bin/llvm-ar" &&
-          /usr/bin/strip src/bpftool
+              LLVM_CONFIG="${GITHUB_WORKSPACE}/${{ env.LLVM_PATH }}/bin/llvm-config" \
+              LLVM_STRIP="${GITHUB_WORKSPACE}/${{ env.LLVM_PATH }}/bin/llvm-strip" \
+              HOSTAR="${GITHUB_WORKSPACE}/${{ env.LLVM_PATH }}/bin/llvm-ar" \
+              make -j -C src V=1
+          strip src/bpftool
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # v2.1.0
@@ -66,16 +69,18 @@ jobs:
       - name: Build static bpftool for arm64 with emulation
         if: matrix.arch == 'arm64'
         env:
-          LLVM: ${{ env[format('LLVM_{0}', matrix.arch)] }}
+          LLVM_PATH: ${{ env[format('LLVM_{0}', matrix.arch)] }}
         run:  |
           docker run --platform linux/arm64 --rm -v $(pwd):/build ubuntu:22.04 \
           bash -c "apt-get update && \
                    apt-get install -y make pkg-config gcc \
                        libelf-dev libcap-dev libstdc++-11-dev zlib1g-dev && \
-                   cd build/bpftool && \
-                   CLANG=../../${{ env.LLVM }}/bin/clang \
-                   LLVM_STRIP=../../${{ env.LLVM }}/bin/llvm-strip \
-                   LLVM_CONFIG=../../${{ env.LLVM }}/bin/llvm-config EXTRA_CFLAGS=--static make -j V=1 -C src && \
+                   cd /build/bpftool && \
+                   EXTRA_CFLAGS=--static \
+                       LLVM_CONFIG='/build/${{ env.LLVM_PATH }}/bin/llvm-config' \
+                       LLVM_STRIP='/build/${{ env.LLVM_PATH }}/bin/llvm-strip' \
+                       CLANG='/build/${{ env.LLVM_PATH }}/bin/clang' \
+                       make -j -C src V=1 && \
                    strip src/bpftool"
 
       - name: Test bpftool binary
@@ -89,7 +94,7 @@ jobs:
           ./bpftool 2>&1 | grep -q Usage
           ./bpftool -p version | \
               tee /dev/stderr | \
-              jq --exit-status ".features | .llvm"
+              jq --exit-status ".features | .llvm and .skeletons"
           ldd ./bpftool 2>&1 | \
               tee /dev/stderr | \
               grep -q 'not a dynamic executable'
