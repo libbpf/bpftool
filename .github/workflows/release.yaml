@@ -109,8 +109,12 @@ jobs:
 
       - name: Rename binaries and compress
         run: |
-          tar -C bpftool_amd64 -I 'gzip -9' -cvf bpftool-${{ github.ref_name }}-amd64.tar.gz bpftool
-          tar -C bpftool_arm64 -I 'gzip -9' -cvf bpftool-${{ github.ref_name }}-arm64.tar.gz bpftool
+          archive_amd64="bpftool-${{ github.ref_name }}-amd64.tar.gz"
+          archive_arm64="bpftool-${{ github.ref_name }}-arm64.tar.gz"
+          tar -C bpftool_amd64 -I 'gzip -9' -cvf "${archive_amd64}" bpftool
+          tar -C bpftool_arm64 -I 'gzip -9' -cvf "${archive_arm64}" bpftool
+          sha256sum "${archive_amd64}" > "${archive_amd64}.sha256sum"
+          sha256sum "${archive_arm64}" > "${archive_arm64}.sha256sum"
 
       - name: Create draft release and add artifacts
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
