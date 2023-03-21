@@ -17,36 +17,24 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-22.04
     env:
-      LLVM_SRC_PATH: llvm-project/llvm
-      LLVM_BUILD_PATH: llvm-project/llvm/build
+      LLVM_URL_PREFIX: https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.0
+      LLVM_PATH: clang+llvm-15.0.0-x86_64-linux-gnu-rhel-8.4
 
     steps:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libelf-dev ninja-build lld
+          sudo apt-get install -y libelf-dev
 
-      - name: Checkout llvm-project
-        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-        with:
-          repository: 'llvm/llvm-project'
-          ref: 'llvmorg-15.0.0'
-          path: 'llvm-project'
-
-      - name: Build LLVM libraries, llvm-config, llvm-strip
+      - name: Download and extract compiled LLVM release
         run: |
-          mkdir -p "${LLVM_BUILD_PATH}"
-          # Use Ninja so we can have parallel builds, but specify to use a
-          # single job for the linker (or we get OOM-ed).
-          cmake -G Ninja -S "${LLVM_SRC_PATH}" -B "${LLVM_BUILD_PATH}" \
-              -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
-              -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_USE_LINKER=lld
-          ninja -C "${LLVM_BUILD_PATH}" llvm-config llvm-strip llvm-libraries
+          curl -L -O "${{ env.LLVM_URL_PREFIX }}/${{ env.LLVM_PATH }}.tar.xz"
+          tar -xvf "${{ env.LLVM_PATH }}.tar.xz"
 
       - name: Checkout bpftool
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
         with:
-          submodules: true
+          submodules: recursive
           # Create a new directory to avoid wiping out LLVM on bpftool checkout
           path: 'bpftool'
 
@@ -54,8 +42,8 @@ jobs:
         working-directory: 'bpftool'
         run: |
           EXTRA_CFLAGS=--static \
-              LLVM_CONFIG="${GITHUB_WORKSPACE}/${LLVM_BUILD_PATH}/bin/llvm-config" \
-              LLVM_STRIP="${GITHUB_WORKSPACE}/${LLVM_BUILD_PATH}/bin/llvm-strip" \
+              LLVM_CONFIG="${GITHUB_WORKSPACE}/${LLVM_PATH}/bin/llvm-config" \
+              LLVM_STRIP="${GITHUB_WORKSPACE}/${LLVM_PATH}/bin/llvm-strip" \
               make -j -C src V=1
 
       - name: Test bpftool binary
