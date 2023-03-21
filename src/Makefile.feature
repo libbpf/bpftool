@@ -19,15 +19,16 @@ else
   LOG=
   LOG_RES = (echo $(1))
   define detect
-    $(shell $(1) && $(call LOG_RES,1) || $(call LOG_RES,0))
+    $(shell $(1) 2>&1 && $(call LOG_RES,1) || $(call LOG_RES,0))
   endef
+  QUIET_STDERR := 2>/dev/null
 endif
 
 ### feature-clang-bpf-co-re
 
 CLANG_BPF_CO_RE_PROBE_CMD = \
   printf '%s\n' 'struct s { int i; } __attribute__((preserve_access_index)); struct s foo;' | \
-    $(CLANG) -g -target bpf -S -o - -x c - 2>/dev/null | grep -q BTF_KIND_VAR
+    $(CLANG) -g -target bpf -S -o - -x c - $(QUIET_STDERR) | grep -q BTF_KIND_VAR
 
 ifneq ($(findstring clang-bpf-co-re,$(FEATURE_TESTS)),)
 $(call LOG,Probing: feature-clang-bpf-co-re)
@@ -44,7 +45,7 @@ LIBBFD_PROBE += '	bfd_demangle(0, 0, 0);'
 LIBBFD_PROBE += '	return 0;'
 LIBBFD_PROBE += '}'
 LIBBFD_PROBE_CMD = printf '%b\n' $(LIBBFD_PROBE) | \
-  $(CC) $(CFLAGS) -Wall -Werror -x c - $(1) -o /dev/null >/dev/null 2>&1
+  $(CC) $(CFLAGS) -Wall -Werror -x c - $(1) -o /dev/null >/dev/null
 
 define libbfd_build
   $(call detect,$(LIBBFD_PROBE_CMD))
@@ -77,7 +78,7 @@ DISASSEMBLER_PROBE += '	return 0;'
 DISASSEMBLER_PROBE += '}'
 
 DISASSEMBLER_PROBE_CMD = printf '%b\n' $(1) | \
-  $(CC) $(CFLAGS) -Wall -Werror -x c - -lbfd -lopcodes -S -o - >/dev/null 2>&1
+  $(CC) $(CFLAGS) -Wall -Werror -x c - -lbfd -lopcodes -S -o - >/dev/null
 define disassembler_build
   $(call detect,$(DISASSEMBLER_PROBE_CMD))
 endef
@@ -110,7 +111,7 @@ LIBCAP_PROBE += '	cap_free(0);'
 LIBCAP_PROBE += '	return 0;'
 LIBCAP_PROBE += '}'
 LIBCAP_PROBE_CMD = printf '%b\n' $(LIBCAP_PROBE) | \
-  $(CC) $(CFLAGS) -Wall -Werror -x c - -lcap -S -o - >/dev/null 2>&1
+  $(CC) $(CFLAGS) -Wall -Werror -x c - -lcap -S -o - >/dev/null
 
 define libcap_build
   $(call detect,$(LIBCAP_PROBE_CMD))
@@ -148,7 +149,7 @@ FEATURE_LDFLAGS := $(EXTRA_LDFLAGS) $(shell $(LLVM_CONFIG) --ldflags 2>/dev/null
 LLVM_PROBE_CMD = printf '%b\n' $(LLVM_PROBE) | \
   $(CC) $(FEATURE_LLVM_CFLAGS) $(FEATURE_LDFLAGS) \
     -Wall -Werror -x c - $(FEATURE_LLVM_LIBS) \
-    -o /dev/null >/dev/null 2>&1
+    -o /dev/null >/dev/null
 
 define llvm_build
   $(call detect,$(LLVM_PROBE_CMD))
