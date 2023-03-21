@@ -111,8 +111,6 @@ jobs:
         run: |
           tar -C bpftool_amd64 -I 'gzip -9' -cvf bpftool-${{ github.ref_name }}-amd64.tar.gz bpftool
           tar -C bpftool_arm64 -I 'gzip -9' -cvf bpftool-${{ github.ref_name }}-arm64.tar.gz bpftool
-          mv bpftool_amd64/bpftool bpftool-amd64
-          mv bpftool_arm64/bpftool bpftool-arm64
 
       - name: Create draft release and add artifacts
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
