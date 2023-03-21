@@ -2,6 +2,23 @@
 
 This directory contains scripts for maintaining bpftool's GitHub mirror.
 
+## gh-label-release-assets.sh
+
+This script can **add labels to GitHub release assets**. Labels are used in the
+GitHub interface instead of the file name in the list of assets, but they do
+not alter the download URL.
+
+The script takes the tag reference for the release as single parameter. The
+repository to use, and the names and labels to set for assets are currently
+defined in the script itself.
+
+It requires the [GitHub command line][gh] (`gh`).
+
+Note that only users with push access to the repository can update release
+assets and set labels.
+
+[gh]: https://cli.github.com/
+
 ## sync-kernel.sh
 
 ### Synchronize Linux and bpftool mirror
@@ -138,7 +155,7 @@ It performs the following steps:
   repository and the bpftool mirror. Then it looks for remaining differences
   between the two repositories, and warn the user if it finds any. Patches
   picked up from the `bpf` tree are usually a source of differences at this
-  step. If the patch containing the known differneces is to be updated after
+  step. If the patch containing the known differences is to be updated after
   the synchronization in progress, the user should do it at this time, before
   the temporary files from the script are deleted.
 
