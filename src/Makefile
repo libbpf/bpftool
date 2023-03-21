@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+BPFTOOL_VERSION := 7.2.0-snapshot.0
 include Makefile.include
 
 ifeq ($(srctree),)
