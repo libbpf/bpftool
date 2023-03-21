@@ -116,6 +116,17 @@ jobs:
           sha256sum "${archive_amd64}" > "${archive_amd64}.sha256sum"
           sha256sum "${archive_arm64}" > "${archive_arm64}.sha256sum"
 
+      - name: Checkout bpftool and libbpf code
+        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3.4.0
+        with:
+          submodules: recursive
+          path: 'bpftool'
+
+      - name: Package source code including submodules
+        run: |
+          rm -rf -- bpftool/.git bpftool/libbpf/.git
+          tar -I 'gzip -9' -cvf "bpftool-libbpf-${{ github.ref_name }}-sources.tar.gz" bpftool
+
       - name: Create draft release and add artifacts
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
         with:
