@@ -15,19 +15,24 @@ jobs:
 
       - name: Get list of commits
         run: |
-          COMMITS_JSON=$(curl -L \
+          read PR_BASE PR_TIP < <(curl -L \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            ${{ github.event.pull_request.commits_url }})
-          PR_FIRST=$(echo "${COMMITS_JSON}" | jq -r ".[0].sha")
-          PR_TIP=$(echo "${COMMITS_JSON}" | jq -r ".[-1].sha")
-          PR_BASE=$(git rev-parse "${PR_FIRST}^")
-          echo "PR_TIP=${PR_TIP}" >> "${GITHUB_ENV}"
-          echo "PR_BASE=${PR_BASE}" >> "${GITHUB_ENV}"
+            ${{ github.event.pull_request.url }} | \
+            tee /dev/stderr | \
+            jq -r '"\(.base.sha) \(.head.sha)"' | \
+            tee /dev/stderr)
+            echo "PR_TIP=${PR_TIP}" >> "${GITHUB_ENV}"
+            echo "PR_BASE=${PR_BASE}" >> "${GITHUB_ENV}"
 
       - name: Check commit prefixes
         run: |
+          if [[ -z "${PR_TIP}" || -z "${PR_BASE}" ]]; then
+              echo "::error title=invalid base and head:: Failed to retrieve base and head for Pull Request"
+              # Fail workflow
+              false
+          fi
           START_MARKER='sync: Update libbpf submodule'
           END_MARKER='sync: Pull latest bpftool changes from kernel'
           declare -a PREFIXES=(
