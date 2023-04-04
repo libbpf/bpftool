@@ -17,10 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04]
+        os: [ubuntu-20.04, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     env:
-      FEATURES: .llvm
+      FEATURES: .llvm and .skeletons
 
     steps:
       - name: Checkout repository
@@ -40,11 +40,6 @@ jobs:
               --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-"${CLANG_VERSION}" \
               --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-"${CLANG_VERSION}"
           echo "CLANG_VERSION=${CLANG_VERSION}" >> "${GITHUB_ENV}"
-
-      - name: Adjust required features
-        if: ${{ matrix.os != 'ubuntu-18.04' }}
-        run: |
-          echo "FEATURES=${FEATURES} and .skeletons" >> "${GITHUB_ENV}"
 
       - name: Build bpftool (default LLVM disassembler)
         run: |
