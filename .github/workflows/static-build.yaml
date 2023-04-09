@@ -17,8 +17,6 @@ concurrency:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-22.04
     env:
       LLVM_URL_PREFIX: https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.0
