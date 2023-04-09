@@ -3,7 +3,7 @@ name: lint-shell
 on:
   pull_request:
     paths:
-      - '.github/workflows/lint.yaml'
+      - '.github/workflows/lint-shell.yaml'
       - 'scripts/**'
   push:
     branches:
