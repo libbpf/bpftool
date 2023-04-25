@@ -13,6 +13,10 @@
 		     + __GNUC_PATCHLEVEL__)
 #endif
 
+#if GCC_VERSION >= 70000 && !defined(__CHECKER__)
+# define __fallthrough __attribute__ ((fallthrough))
+#endif
+
 #if __has_attribute(__error__)
 # define __compiletime_error(message) __attribute__((error(message)))
 #endif
