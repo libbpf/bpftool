@@ -135,9 +135,10 @@ jobs:
           path: 'bpftool'
 
       - name: Package source code including submodules
-        run: |
-          rm -rf -- bpftool/.git bpftool/libbpf/.git
-          tar -I 'gzip -9' -cvf "bpftool-libbpf-${{ github.ref_name }}-sources.tar.gz" bpftool
+        uses: qmonnet/git-archive-all-action@791fb850881cf58b1d1fcc9b06c01940080bba0a # v1.0.1
+        with:
+          output-files: bpftool-libbpf-${{ github.ref_name }}-sources.tar.gz
+          base-repo: bpftool
 
       - name: Create draft release and add artifacts
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v0.1.15
