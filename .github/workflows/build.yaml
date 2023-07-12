@@ -32,6 +32,12 @@ jobs:
         with:
           submodules: true
 
+      - name: Use clang-12 and not clang-11 for older Ubuntu
+        if: matrix.os == 'ubuntu-20.04'
+        run: |
+          sudo apt-get remove -y clang-11 llvm-11
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 50
+
       - name: Install dependencies
         run: |
           sudo apt-get update
