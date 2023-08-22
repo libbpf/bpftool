@@ -52,11 +52,11 @@ SYNOPSIS
 
 DESCRIPTION
 ===========
-	*bpftool* allows for inspection and simple modification of BPF objects
-	on the system.
+    *bpftool* allows for inspection and simple modification of BPF objects on 
+    the system.
 
-	Note that format of the output of all tools is not guaranteed to be
-	stable and should not be depended upon.
+    Note that format of the output of all tools is not guaranteed to be stable 
+    and should not be depended upon.
 
 OPTIONS
 =======

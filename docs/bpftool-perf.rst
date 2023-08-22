@@ -29,18 +29,19 @@ PERF COMMANDS
 
 DESCRIPTION
 ===========
-	**bpftool perf { show | list }**
-		List all raw_tracepoint, tracepoint, kprobe attachment in the system.
+    bpftool perf { show | list }
+        List all raw_tracepoint, tracepoint, kprobe attachment in the system.
 
-		Output will start with process id and file descriptor in that process,
-		followed by bpf program id, attachment information, and attachment point.
-		The attachment point for raw_tracepoint/tracepoint is the trace probe name.
-		The attachment point for k[ret]probe is either symbol name and offset,
-		or a kernel virtual address.
-		The attachment point for u[ret]probe is the file name and the file offset.
+        Output will start with process id and file descriptor in that process, 
+        followed by bpf program id, attachment information, and attachment 
+        point. The attachment point for raw_tracepoint/tracepoint is the trace 
+        probe name. The attachment point for k[ret]probe is either symbol name 
+        and offset, or a kernel virtual address.
+        The attachment point for u[ret]probe is the file name and the file 
+        offset.
 
-	**bpftool perf help**
-		Print short help message.
+    bpftool perf help
+        Print short help message.
 
 OPTIONS
 =======
