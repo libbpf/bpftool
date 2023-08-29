@@ -44,8 +44,4 @@
 # define __weak			__attribute__((weak))
 #endif
 
-#ifndef __fallthrough
-# define __fallthrough
-#endif
-
 #endif
