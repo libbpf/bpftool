@@ -52,19 +52,19 @@ SYNOPSIS
 
 DESCRIPTION
 ===========
-    *bpftool* allows for inspection and simple modification of BPF objects on 
+    *bpftool* allows for inspection and simple modification of BPF objects on
     the system.
 
-    Note that format of the output of all tools is not guaranteed to be stable 
+    Note that format of the output of all tools is not guaranteed to be stable
     and should not be depended upon.
 
 OPTIONS
 =======
-	.. include:: common_options.rst
+    .. include:: common_options.rst
 
-	-m, --mapcompat
-		Allow loading maps with unknown map definitions.
+    -m, --mapcompat
+        Allow loading maps with unknown map definitions.
 
-	-n, --nomount
-		Do not automatically attempt to mount any virtual file system
-		(such as tracefs or BPF virtual file system) when necessary.
+    -n, --nomount
+        Do not automatically attempt to mount any virtual file system (such as
+		tracefs or BPF virtual file system) when necessary.

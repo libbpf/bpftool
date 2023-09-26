@@ -34,27 +34,27 @@ LINK COMMANDS
 DESCRIPTION
 ===========
     bpftool link { show | list } [*LINK*]
-        Show information about active links. If *LINK* is specified show 
-        information only about given link, otherwise list all links currently 
+        Show information about active links. If *LINK* is specified show
+        information only about given link, otherwise list all links currently
         active on the system.
 
-        Output will start with link ID followed by link type and zero or more 
+        Output will start with link ID followed by link type and zero or more
         named attributes, some of which depend on type of link.
 
-        Since Linux 5.8 bpftool is able to discover information about processes 
-        that hold open file descriptors (FDs) against BPF links. On such 
-        kernels bpftool will automatically emit this information as well.
+        Since Linux 5.8 bpftool is able to discover information about processes
+        that hold open file descriptors (FDs) against BPF links. On such kernels
+        bpftool will automatically emit this information as well.
 
     bpftool link pin *LINK* *FILE*
         Pin link *LINK* as *FILE*.
 
-        Note: *FILE* must be located in *bpffs* mount. It must not contain a 
-        dot character ('.'), which is reserved for future extensions of *bpffs*.
+        Note: *FILE* must be located in *bpffs* mount. It must not contain a dot
+        character ('.'), which is reserved for future extensions of *bpffs*.
 
     bpftool link detach *LINK*
-        Force-detach link *LINK*. BPF link and its underlying BPF program will 
-        stay valid, but they will be detached from the respective BPF hook and 
-        BPF link will transition into a defunct state until last open file 
+        Force-detach link *LINK*. BPF link and its underlying BPF program will
+        stay valid, but they will be detached from the respective BPF hook and
+        BPF link will transition into a defunct state until last open file
         descriptor for that link is closed.
 
     bpftool link help
@@ -62,15 +62,14 @@ DESCRIPTION
 
 OPTIONS
 =======
-	.. include:: common_options.rst
+    .. include:: common_options.rst
 
-	-f, --bpffs
-		When showing BPF links, show file names of pinned
-		links.
+    -f, --bpffs
+        When showing BPF links, show file names of pinned links.
 
-	-n, --nomount
-		Do not automatically attempt to mount any virtual file system
-		(such as tracefs or BPF virtual file system) when necessary.
+    -n, --nomount
+        Do not automatically attempt to mount any virtual file system (such as
+        tracefs or BPF virtual file system) when necessary.
 
 EXAMPLES
 ========

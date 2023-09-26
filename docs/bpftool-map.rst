@@ -60,48 +60,48 @@ MAP COMMANDS
 DESCRIPTION
 ===========
     bpftool map { show | list }   [*MAP*]
-        Show information about loaded maps.  If *MAP* is specified show 
-        information only about given maps, otherwise list all maps currently 
-        loaded on the system.  In case of **name**, *MAP* may match several 
-        maps which will all be shown.
+        Show information about loaded maps.  If *MAP* is specified show
+        information only about given maps, otherwise list all maps currently
+        loaded on the system.  In case of **name**, *MAP* may match several maps
+        which will all be shown.
 
-        Output will start with map ID followed by map type and zero or more 
+        Output will start with map ID followed by map type and zero or more
         named attributes (depending on kernel version).
 
-        Since Linux 5.8 bpftool is able to discover information about processes 
-        that hold open file descriptors (FDs) against BPF maps. On such kernels 
+        Since Linux 5.8 bpftool is able to discover information about processes
+        that hold open file descriptors (FDs) against BPF maps. On such kernels
         bpftool will automatically emit this information as well.
 
     bpftool map create *FILE* type *TYPE* key *KEY_SIZE* value *VALUE_SIZE*  entries *MAX_ENTRIES* name *NAME* [flags *FLAGS*] [inner_map *MAP*] [offload_dev *NAME*]
         Create a new map with given parameters and pin it to *bpffs* as *FILE*.
 
-        *FLAGS* should be an integer which is the combination of desired flags, 
-        e.g. 1024 for **BPF_F_MMAPABLE** (see bpf.h UAPI header for existing 
+        *FLAGS* should be an integer which is the combination of desired flags,
+        e.g. 1024 for **BPF_F_MMAPABLE** (see bpf.h UAPI header for existing
         flags).
 
-        To create maps of type array-of-maps or hash-of-maps, the **inner_map** 
-        keyword must be used to pass an inner map. The kernel needs it to 
-        collect metadata related to the inner maps that the new map will work 
+        To create maps of type array-of-maps or hash-of-maps, the **inner_map**
+        keyword must be used to pass an inner map. The kernel needs it to
+        collect metadata related to the inner maps that the new map will work
         with.
 
-        Keyword **offload_dev** expects a network interface name, and is used 
-        to request hardware offload for the map.
+        Keyword **offload_dev** expects a network interface name, and is used to
+        request hardware offload for the map.
 
     bpftool map dump    *MAP*
-        Dump all entries in a given *MAP*.  In case of **name**, *MAP* may 
-        match several maps which will all be dumped.
+        Dump all entries in a given *MAP*.  In case of **name**, *MAP* may match
+        several maps which will all be dumped.
 
     bpftool map update  *MAP* [key *DATA*] [value *VALUE*] [*UPDATE_FLAGS*]
         Update map entry for a given *KEY*.
 
-        *UPDATE_FLAGS* can be one of: **any** update existing entry or add if 
-		doesn't exit; **exist** update only if entry already exists; **noexist**
-		 update only if entry doesn't exist.
+        *UPDATE_FLAGS* can be one of: **any** update existing entry or add if
+        doesn't exit; **exist** update only if entry already exists; **noexist**
+        update only if entry doesn't exist.
 
-        If the **hex** keyword is provided in front of the bytes sequence, the 
+        If the **hex** keyword is provided in front of the bytes sequence, the
         bytes are parsed as hexadecimal values, even if no "0x" prefix is added.
-        If the keyword is not provided, then the bytes are parsed as decimal 
-        values, unless a "0x" prefix (for hexadecimal) or a "0" prefix (for 
+        If the keyword is not provided, then the bytes are parsed as decimal
+        values, unless a "0x" prefix (for hexadecimal) or a "0" prefix (for
         octal) is provided.
 
     bpftool map lookup  *MAP* [key *DATA*]
@@ -116,22 +116,23 @@ DESCRIPTION
     bpftool map pin     *MAP*  *FILE*
         Pin map *MAP* as *FILE*.
 
-        Note: *FILE* must be located in *bpffs* mount. It must not contain a dot character ('.'), which is reserved for future extensions of *bpffs*.
+        Note: *FILE* must be located in *bpffs* mount. It must not contain a dot
+        character ('.'), which is reserved for future extensions of *bpffs*.
 
     bpftool map event_pipe *MAP* [cpu *N* index *M*]
         Read events from a **BPF_MAP_TYPE_PERF_EVENT_ARRAY** map.
 
-        Install perf rings into a perf event array map and dump output of any 
-        **bpf_perf_event_output**\ () call in the kernel. By default read the 
-        number of CPUs on the system and install perf ring for each CPU in the 
+        Install perf rings into a perf event array map and dump output of any
+        **bpf_perf_event_output**\ () call in the kernel. By default read the
+        number of CPUs on the system and install perf ring for each CPU in the
         corresponding index in the array.
 
-        If **cpu** and **index** are specified, install perf ring for given 
+        If **cpu** and **index** are specified, install perf ring for given
         **cpu** at **index** in the array (single ring).
 
-        Note that installing a perf ring into an array will silently replace 
-        any existing ring.  Any other application will stop receiving events if 
-        it installed its rings earlier.
+        Note that installing a perf ring into an array will silently replace any
+        existing ring.  Any other application will stop receiving events if it
+        installed its rings earlier.
 
     bpftool map peek  *MAP*
         Peek next value in the queue or stack.
@@ -149,10 +150,10 @@ DESCRIPTION
         Dequeue and print value from the queue.
 
     bpftool map freeze  *MAP*
-        Freeze the map as read-only from user space. Entries from a frozen map 
-        can not longer be updated or deleted with the **bpf**\ () system call. 
-        This operation is not reversible, and the map remains immutable from 
-        user space until its destruction. However, read and write permissions 
+        Freeze the map as read-only from user space. Entries from a frozen map
+        can not longer be updated or deleted with the **bpf**\ () system call.
+        This operation is not reversible, and the map remains immutable from
+        user space until its destruction. However, read and write permissions
         for BPF programs to the map remain unchanged.
 
     bpftool map help
@@ -160,14 +161,14 @@ DESCRIPTION
 
 OPTIONS
 =======
-	.. include:: common_options.rst
+    .. include:: common_options.rst
 
-	-f, --bpffs
-		  Show file names of pinned maps.
+    -f, --bpffs
+        Show file names of pinned maps.
 
-	-n, --nomount
-		  Do not automatically attempt to mount any virtual file system
-		  (such as tracefs or BPF virtual file system) when necessary.
+    -n, --nomount
+        Do not automatically attempt to mount any virtual file system (such as
+        tracefs or BPF virtual file system) when necessary.
 
 EXAMPLES
 ========
@@ -219,8 +220,8 @@ Note that map update can also be used in order to change the program references
 hold by a program array map. This can be used, for example, to change the
 programs used for tail-call jumps at runtime, without having to reload the
 entry-point program. Below is an example for this use case: we load a program
-defining a prog array map, and with a main function that contains a tail call
-to other programs that can be used either to "process" packets or to "debug"
+defining a prog array map, and with a main function that contains a tail call to
+other programs that can be used either to "process" packets or to "debug"
 processing. Note that the prog array map MUST be pinned into the BPF virtual
 file system for the map update to work successfully, as kernel flushes prog
 array maps when they have no more references from user space (and the update
