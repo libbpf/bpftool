@@ -195,24 +195,24 @@ EXAMPLES
 
 ::
 
-    #include <stdbool.h>
-    #include <linux/ptrace.h>
-    #include <linux/bpf.h>
-    #include <bpf/bpf_helpers.h>
+  #include <stdbool.h>
+  #include <linux/ptrace.h>
+  #include <linux/bpf.h>
+  #include <bpf/bpf_helpers.h>
 
-    const volatile int param1 = 42;
-    bool global_flag = true;
+  const volatile int param1 = 42;
+  bool global_flag = true;
   struct { int x; } data = {};
 
   SEC("raw_tp/sys_enter")
   int handle_sys_enter(struct pt_regs *ctx)
   {
-    static long my_static_var;
-    if (global_flag)
-      my_static_var++;
-    else
-      data.x += param1;
-    return 0;
+  	static long my_static_var;
+  	if (global_flag)
+  		my_static_var++;
+  	else
+  		data.x += param1;
+  	return 0;
   }
 
 **$ cat example2.bpf.c**
@@ -224,18 +224,18 @@ EXAMPLES
   #include <bpf/bpf_helpers.h>
 
   struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 128);
-    __type(key, int);
-    __type(value, long);
+  	__uint(type, BPF_MAP_TYPE_HASH);
+  	__uint(max_entries, 128);
+  	__type(key, int);
+  	__type(value, long);
   } my_map SEC(".maps");
 
   SEC("raw_tp/sys_exit")
   int handle_sys_exit(struct pt_regs *ctx)
   {
-    int zero = 0;
-    bpf_map_lookup_elem(&my_map, &zero);
-    return 0;
+  	int zero = 0;
+  	bpf_map_lookup_elem(&my_map, &zero);
+  	return 0;
   }
 
 This is example BPF application with two BPF programs and a mix of BPF maps and
@@ -265,46 +265,46 @@ file *example.bpf.o*.
   #include <bpf/libbpf.h>
 
   struct example {
-    struct bpf_object_skeleton *skeleton;
-    struct bpf_object *obj;
-    struct {
-      struct bpf_map *rodata;
-      struct bpf_map *data;
-      struct bpf_map *bss;
-      struct bpf_map *my_map;
-    } maps;
-    struct {
-      struct bpf_program *handle_sys_enter;
-      struct bpf_program *handle_sys_exit;
-    } progs;
-    struct {
-      struct bpf_link *handle_sys_enter;
-      struct bpf_link *handle_sys_exit;
-    } links;
-    struct example__bss {
-      struct {
-        int x;
-      } data;
-    } *bss;
-    struct example__data {
-      _Bool global_flag;
-      long int handle_sys_enter_my_static_var;
-    } *data;
-    struct example__rodata {
-      int param1;
-    } *rodata;
+  	struct bpf_object_skeleton *skeleton;
+  	struct bpf_object *obj;
+  	struct {
+  		struct bpf_map *rodata;
+  		struct bpf_map *data;
+  		struct bpf_map *bss;
+  		struct bpf_map *my_map;
+  	} maps;
+  	struct {
+  		struct bpf_program *handle_sys_enter;
+  		struct bpf_program *handle_sys_exit;
+  	} progs;
+  	struct {
+  		struct bpf_link *handle_sys_enter;
+  		struct bpf_link *handle_sys_exit;
+  	} links;
+  	struct example__bss {
+  		struct {
+  			int x;
+  		} data;
+  	} *bss;
+  	struct example__data {
+  		_Bool global_flag;
+  		long int handle_sys_enter_my_static_var;
+  	} *data;
+  	struct example__rodata {
+  		int param1;
+  	} *rodata;
   };
 
-    static void example__destroy(struct example *obj);
-    static inline struct example *example__open_opts(
+  static void example__destroy(struct example *obj);
+  static inline struct example *example__open_opts(
                 const struct bpf_object_open_opts *opts);
-    static inline struct example *example__open();
-    static inline int example__load(struct example *obj);
-    static inline struct example *example__open_and_load();
-    static inline int example__attach(struct example *obj);
-    static inline void example__detach(struct example *obj);
+  static inline struct example *example__open();
+  static inline int example__load(struct example *obj);
+  static inline struct example *example__open_and_load();
+  static inline int example__attach(struct example *obj);
+  static inline void example__detach(struct example *obj);
 
-    #endif /* __EXAMPLE_SKEL_H__ */
+  #endif /* __EXAMPLE_SKEL_H__ */
 
 **$ cat example.c**
 
@@ -314,39 +314,39 @@ file *example.bpf.o*.
 
   int main()
   {
-    struct example *skel;
-    int err = 0;
+  	struct example *skel;
+  	int err = 0;
 
-    skel = example__open();
-    if (!skel)
-      goto cleanup;
+  	skel = example__open();
+  	if (!skel)
+  		goto cleanup;
 
-    skel->rodata->param1 = 128;
+  	skel->rodata->param1 = 128;
 
-    err = example__load(skel);
-    if (err)
-      goto cleanup;
+  	err = example__load(skel);
+  	if (err)
+  		goto cleanup;
 
-    err = example__attach(skel);
-    if (err)
-      goto cleanup;
+  	err = example__attach(skel);
+  	if (err)
+  		goto cleanup;
 
-    /* all libbpf APIs are usable */
-    printf("my_map name: %s\n", bpf_map__name(skel->maps.my_map));
-    printf("sys_enter prog FD: %d\n",
-        bpf_program__fd(skel->progs.handle_sys_enter));
-    
-    /* detach and re-attach sys_exit program */
-    bpf_link__destroy(skel->links.handle_sys_exit);
-    skel->links.handle_sys_exit =
-        bpf_program__attach(skel->progs.handle_sys_exit);
-    
-    printf("my_static_var: %ld\n",
-      skel->bss->handle_sys_enter_my_static_var);
+  	/* all libbpf APIs are usable */
+  	printf("my_map name: %s\n", bpf_map__name(skel->maps.my_map));
+  	printf("sys_enter prog FD: %d\n",
+  	       bpf_program__fd(skel->progs.handle_sys_enter));
+  	
+  	/* detach and re-attach sys_exit program */
+  	bpf_link__destroy(skel->links.handle_sys_exit);
+  	skel->links.handle_sys_exit =
+  		bpf_program__attach(skel->progs.handle_sys_exit);
+  	
+  	printf("my_static_var: %ld\n",
+  	       skel->bss->handle_sys_enter_my_static_var);
 
   cleanup:
-    example__destroy(skel);
-    return err;
+  	example__destroy(skel);
+  	return err;
   }
 
 **# ./example**

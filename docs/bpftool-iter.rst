@@ -62,12 +62,12 @@ EXAMPLES
 
 ::
 
-    Create a file-based bpf iterator from bpf_iter_netlink.o and pin it to 
-    /sys/fs/bpf/my_netlink
+   Create a file-based bpf iterator from bpf_iter_netlink.o and pin it to 
+   /sys/fs/bpf/my_netlink
 
 **# bpftool iter pin bpf_iter_hashmap.o /sys/fs/bpf/my_hashmap map id 20**
 
 ::
 
-    Create a file-based bpf iterator from bpf_iter_hashmap.o and map with id 20,
-    and pin it to /sys/fs/bpf/my_hashmap
+   Create a file-based bpf iterator from bpf_iter_hashmap.o and map with id 20,
+   and pin it to /sys/fs/bpf/my_hashmap
