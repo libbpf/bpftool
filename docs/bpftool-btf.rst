@@ -101,7 +101,7 @@ EXAMPLES
 This gives an example of default output for all supported BTF kinds.
 
 **$ cat prog.c**
- 
+
 ::
 
   struct fwd_struct;
