@@ -1,8 +1,14 @@
-bpftool
+<a href=".github/assets/">
+  <div>
+    <img src=".github/assets/bpftool_horizontal_color.svg"
+         alt="bpftool logo: Hannah the Honeyguide"
+         width=500px; />
+  </div>
+</a>
+
 [![License BSD 2-Clause][bsd-badge]](LICENSE.BSD-2-Clause)
 [![License GPL 2.0][gpl-badge]](LICENSE.GPL-2.0)
 [![Build status][build-badge]][build]
-=======
 
 [bsd-badge]: https://img.shields.io/badge/License-BSD_2--Clause-blue.svg
 [gpl-badge]: https://img.shields.io/badge/License-GPL_2.0-blue.svg
