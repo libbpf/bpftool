@@ -195,7 +195,7 @@ The synchronization process is semi-automated: the script in
 run this script manually and then create a pull request to merge the resulting
 commits.
 
-Take a look at [the script](scripts/sync-kernel.sh) for the technical details. of the process. See also the documentation in [the accompanying README.md](scripts#sync-kernelsh)
+Take a look at [the script](scripts/sync-kernel.sh) for the technical details of the process. See also the documentation in [the accompanying README.md](scripts#sync-kernelsh)
 
 License
 -------
