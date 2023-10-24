@@ -66,7 +66,8 @@ DESCRIPTION
         replaced by the command used with **overwrite** option. Currently, only
         XDP-related modes are supported for *ATTACH_TYPE*.
 
-        *ATTACH_TYPE* can be of:
+        *ATTACH_TYPE* can be one of:
+
         - **xdp** - try native XDP and fallback to generic XDP if NIC driver does not support it;
         - **xdpgeneric** - Generic XDP. runs at generic XDP hook when packet already enters receive path as skb;
         - **xdpdrv** - Native XDP. runs earliest point in driver's receive path;

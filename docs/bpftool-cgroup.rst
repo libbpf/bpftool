@@ -101,17 +101,22 @@ DESCRIPTION
         - **post_bind6** return from bind(2) for an inet6 socket (since 4.17)
         - **connect4** call to connect(2) for an inet4 socket (since 4.17)
         - **connect6** call to connect(2) for an inet6 socket (since 4.17)
+        - **connect_unix** call to connect(2) for a unix socket (since 6.7);
         - **sendmsg4** call to sendto(2), sendmsg(2), sendmmsg(2) for an unconnected udp4 socket (since 4.18)
         - **sendmsg6** call to sendto(2), sendmsg(2), sendmmsg(2) for an unconnected udp6 socket (since 4.18)
+        - **sendmsg_unix** call to sendto(2), sendmsg(2), sendmmsg(2) for an unconnected unix socket (since 6.7);
         - **recvmsg4** call to recvfrom(2), recvmsg(2), recvmmsg(2) for an unconnected udp4 socket (since 5.2)
         - **recvmsg6** call to recvfrom(2), recvmsg(2), recvmmsg(2) for an unconnected udp6 socket (since 5.2)
+        - **recvmsg_unix** call to recvfrom(2), recvmsg(2), recvmmsg(2) for an unconnected unix socket (since 6.7);
         - **sysctl** sysctl access (since 5.2)
         - **getsockopt** call to getsockopt (since 5.3)
         - **setsockopt** call to setsockopt (since 5.3)
         - **getpeername4** call to getpeername(2) for an inet4 socket (since 5.8)
         - **getpeername6** call to getpeername(2) for an inet6 socket (since 5.8)
+        - **getpeername_unix** call to getpeername(2) for a unix socket (since 6.7);
         - **getsockname4** call to getsockname(2) for an inet4 socket (since 5.8)
         - **getsockname6** call to getsockname(2) for an inet6 socket (since 5.8)
+        - **getsockname_unix** call to getsockname(2) for a unix socket (since 6.7);
         - **sock_release** closing an userspace inet socket (since 5.9)
 
     bpftool cgroup detach *CGROUP* *ATTACH_TYPE* *PROG*
