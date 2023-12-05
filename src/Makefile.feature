@@ -27,7 +27,7 @@ endif
 ### feature-clang-bpf-co-re
 
 CLANG_BPF_CO_RE_PROBE_CMD = \
-  printf '%s\n' 'struct s { int i; } __attribute__((preserve_access_index)); struct s foo;' | \
+  printf '%s\n' 'struct s { int i; } __attribute__((preserve_access_index)); struct s foo = {};' | \
     $(CLANG) -g -target bpf -S -o - -x c - $(QUIET_STDERR) | grep -q BTF_KIND_VAR
 
 ifneq ($(findstring clang-bpf-co-re,$(FEATURE_TESTS)),)
