@@ -16,7 +16,7 @@ SYNOPSIS
 
 	**bpftool** [*OPTIONS*] **gen** *COMMAND*
 
-	*OPTIONS* := { |COMMON_OPTIONS| | { **-L** | **--use-loader** } }
+	*OPTIONS* := { |COMMON_OPTIONS| | { **-L** | **--use-loader** } | { **-B** | **--base-btf** } }
 
 	*COMMAND* := { **object** | **skeleton** | **help** }
 
@@ -207,6 +207,14 @@ OPTIONS
 		  skeleton). A light skeleton contains a loader eBPF program. It does
 		  not use the majority of the libbpf infrastructure, and does not need
 		  libelf.
+
+	-B, --base-btf *FILE*
+		  Pass a base BTF object. Base BTF objects are typically used
+		  with BTF objects for kernel modules. To avoid duplicating
+		  all kernel symbols required by modules, BTF objects for
+		  modules are "split", they are built incrementally on top of
+		  the kernel (vmlinux) BTF object. So the base BTF reference
+		  should usually point to the kernel BTF.
 
 EXAMPLES
 ========
@@ -444,3 +452,11 @@ ones given to min_core_btf.
   obj = bpf_object__open_file("one.bpf.o", &opts);
 
   ...
+
+Kernel module BTF may also be minimized by using the -B option:
+
+**$ bpftool -B 5.4.0-smaller.btf gen min_core_btf 5.4.0-module.btf 5.4.0-module-smaller.btf one.bpf.o**
+
+A minimized module BTF will still not contain vmlinux BTF types, so you
+should always minimize the vmlinux file first, and then minimize the 
+kernel module file.

@@ -1630,7 +1630,8 @@ static int do_help(int argc, char **argv)
 		"       %1$s %2$s help\n"
 		"\n"
 		"       " HELP_SPEC_OPTIONS " |\n"
-		"                    {-L|--use-loader} }\n"
+		"                    {-L|--use-loader}\n"
+		"                    {-B|--base-btf} }\n"
 		"",
 		bin_name, "gen");
 
@@ -1695,14 +1696,14 @@ btfgen_new_info(const char *targ_btf_path)
 	if (!info)
 		return NULL;
 
-	info->src_btf = btf__parse(targ_btf_path, NULL);
+	info->src_btf = btf__parse_split(targ_btf_path, base_btf);
 	if (!info->src_btf) {
 		err = -errno;
 		p_err("failed parsing '%s' BTF file: %s", targ_btf_path, strerror(errno));
 		goto err_out;
 	}
 
-	info->marked_btf = btf__parse(targ_btf_path, NULL);
+	info->marked_btf = btf__parse_split(targ_btf_path, base_btf);
 	if (!info->marked_btf) {
 		err = -errno;
 		p_err("failed parsing '%s' BTF file: %s", targ_btf_path, strerror(errno));
@@ -2141,10 +2142,16 @@ static struct btf *btfgen_get_btf(struct btfgen_info *info)
 {
 	struct btf *btf_new = NULL;
 	unsigned int *ids = NULL;
+	const struct btf *base;
 	unsigned int i, n = btf__type_cnt(info->marked_btf);
+	int start_id = 1;
 	int err = 0;
 
-	btf_new = btf__new_empty();
+	base = btf__base_btf(info->src_btf);
+	if (base)
+		start_id = btf__type_cnt(base);
+
+	btf_new = btf__new_empty_split((struct btf *)base);
 	if (!btf_new) {
 		err = -errno;
 		goto err_out;
@@ -2157,7 +2164,7 @@ static struct btf *btfgen_get_btf(struct btfgen_info *info)
 	}
 
 	/* first pass: add all marked types to btf_new and add their new ids to the ids map */
-	for (i = 1; i < n; i++) {
+	for (i = start_id; i < n; i++) {
 		const struct btf_type *cloned_type, *type;
 		const char *name;
 		int new_id;
@@ -2213,7 +2220,7 @@ static struct btf *btfgen_get_btf(struct btfgen_info *info)
 	}
 
 	/* second pass: fix up type ids */
-	for (i = 1; i < btf__type_cnt(btf_new); i++) {
+	for (i = start_id; i < btf__type_cnt(btf_new); i++) {
 		struct btf_type *btf_type = (struct btf_type *) btf__type_by_id(btf_new, i);
 
 		err = btf_type_visit_type_ids(btf_type, btfgen_remap_id, ids);
