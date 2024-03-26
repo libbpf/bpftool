@@ -76,7 +76,7 @@
  ifneq ($(BPFTOOL_VERSION),)
  CFLAGS += -DBPFTOOL_VERSION='"$(BPFTOOL_VERSION)"'
  endif
-@@ -119,11 +117,7 @@
+@@ -123,11 +121,7 @@
  endif
  
  ifeq ($(check_feat),1)
@@ -89,7 +89,7 @@
  endif
  
  LIBS = $(LIBBPF) -lelf -lz
-@@ -213,7 +207,7 @@
+@@ -214,7 +208,7 @@
  $(OUTPUT)%.bpf.o: skeleton/%.bpf.c $(OUTPUT)vmlinux.h $(LIBBPF_BOOTSTRAP)
  	$(QUIET_CLANG)$(CLANG) \
  		-I$(or $(OUTPUT),.) \
@@ -97,21 +97,17 @@
 +		-I$(srctree)/include/uapi/ \
  		-I$(LIBBPF_BOOTSTRAP_INCLUDE) \
  		-g -O2 -Wall -fno-stack-protector \
- 		-target bpf -c $< -o $@
-@@ -231,10 +225,10 @@
+ 		--target=bpf -c $< -o $@
+@@ -232,7 +226,7 @@
  
  CFLAGS += $(if $(BUILD_BPF_SKELS),,-DBPFTOOL_WITHOUT_SKELETONS)
- 
--$(BOOTSTRAP_OUTPUT)disasm.o: $(srctree)/kernel/bpf/disasm.c
-+$(BOOTSTRAP_OUTPUT)disasm.o: $(srctree)/src/kernel/bpf/disasm.c
- 	$(QUIET_CC)$(HOSTCC) $(HOST_CFLAGS) -c -MMD $< -o $@
  
 -$(OUTPUT)disasm.o: $(srctree)/kernel/bpf/disasm.c
 +$(OUTPUT)disasm.o: $(srctree)/src/kernel/bpf/disasm.c
  	$(QUIET_CC)$(CC) $(CFLAGS) -c -MMD $< -o $@
  
  $(BPFTOOL_BOOTSTRAP): $(BOOTSTRAP_OBJS) $(LIBBPF_BOOTSTRAP)
-@@ -253,7 +247,7 @@
+@@ -251,7 +245,7 @@
  	$(call QUIET_CLEAN, feature-detect)
  	$(Q)$(MAKE) -C $(srctree)/tools/build/feature/ clean >/dev/null
  
@@ -120,7 +116,7 @@
  	$(call QUIET_CLEAN, bpftool)
  	$(Q)$(RM) -- $(OUTPUT)bpftool $(OUTPUT)*.o $(OUTPUT)*.d
  	$(Q)$(RM) -- $(OUTPUT)*.skel.h $(OUTPUT)vmlinux.h
-@@ -269,7 +263,7 @@
+@@ -267,7 +261,7 @@
  
  install: install-bin
  	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(bash_compdir)
@@ -129,7 +125,7 @@
  
  uninstall:
  	$(call QUIET_UNINST, bpftool)
-@@ -277,16 +271,16 @@
+@@ -275,16 +269,16 @@
  	$(Q)$(RM) -- $(DESTDIR)$(bash_compdir)/bpftool
  
  doc:
