@@ -340,6 +340,22 @@ for patch in $(ls -1 "${TMP_DIR}"/patches | tail -n +2); do
 	fi
 done
 
+echo "Regenerating .mailmap..."
+cd_to "${LINUX_REPO}"
+git checkout "${TIP_SYM_REF}"
+cd_to "${BPFTOOL_REPO}"
+"${BPFTOOL_REPO}"/scripts/mailmap-update.sh "${BPFTOOL_REPO}" "${LINUX_REPO}"
+# If anything changed, commit it
+mailmap_changes=$(git status --porcelain .mailmap | wc -l)
+if ((mailmap_changes == 1)); then
+	git add .mailmap
+	git commit -s -m "sync: update .mailmap
+
+Update .mailmap based on bpftool's list of contributors and on the
+latest .mailmap version in the upstream repository.
+" -- .mailmap
+fi
+
 # Use generated cover-letter as a template for "sync commit" with
 # baseline and checkpoint commits from kernel repo (and leave summary
 # from cover letter intact, of course)
