@@ -43,7 +43,12 @@ EXTRA_WARNINGS := \
 	-Wundef \
 	-Wwrite-strings \
 
-ifeq ($(findstring s,$(filter-out --%,$(MAKEFLAGS))),)
+define descend
+  mkdir -p $(OUTPUT)$(1) && \
+    $(MAKE) --no-print-directory -C $(1) $(2)
+endef
+
+ifeq ($(findstring s,$(firstword -$(MAKEFLAGS))),)
   ifneq ($(V),1)
 
     define def_quiet_msg
