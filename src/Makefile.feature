@@ -45,7 +45,7 @@ LIBBFD_PROBE += '	bfd_demangle(0, 0, 0);'
 LIBBFD_PROBE += '	return 0;'
 LIBBFD_PROBE += '}'
 LIBBFD_PROBE_CMD = printf '%b\n' $(LIBBFD_PROBE) | \
-  $(CC) $(CFLAGS) -Wall -Werror -x c - $(1) -o /dev/null >/dev/null
+  $(CC) $(CFLAGS) -Wall -Werror -x c -DPACKAGE='"bpftool"' - $(1) -o /dev/null >/dev/null
 
 define libbfd_build
   $(call detect,$(LIBBFD_PROBE_CMD))
@@ -78,7 +78,7 @@ DISASSEMBLER_PROBE += '	return 0;'
 DISASSEMBLER_PROBE += '}'
 
 DISASSEMBLER_PROBE_CMD = printf '%b\n' $(1) | \
-  $(CC) $(CFLAGS) -Wall -Werror -x c - -lbfd -lopcodes -S -o - >/dev/null
+  $(CC) $(CFLAGS) -Wall -Werror -x c -DPACKAGE='"bpftool"' - -lbfd -lopcodes -S -o - >/dev/null
 define disassembler_build
   $(call detect,$(DISASSEMBLER_PROBE_CMD))
 endef
