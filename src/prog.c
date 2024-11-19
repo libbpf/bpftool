@@ -2055,6 +2055,14 @@ struct profile_metric {
 		.ratio_desc = "dtlb misses per million insns",
 		.ratio_mul = 1e6,
 	},
+	{
+		.name = "cpu_clock",
+		.attr = {
+			.type = PERF_TYPE_SOFTWARE,
+			.config = PERF_COUNT_SW_CPU_CLOCK,
+			.exclude_user = 1,
+		},
+	},
 };
 
 static __u64 profile_total_count;
