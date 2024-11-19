@@ -2284,6 +2284,7 @@ static int profile_open_perf_event(int mid, int cpu, int map_fd)
 			profile_perf_event_cnt++;
 			return 0;
 		}
+		perror("perf_event_open failed");
 		return -1;
 	}
 
