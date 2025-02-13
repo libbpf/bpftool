@@ -5,12 +5,6 @@ ifeq ($(srctree),)
 srctree := $(patsubst %/,%,$(dir $(CURDIR)))
 endif
 
-ifeq ($(V),1)
-  Q =
-else
-  Q = @
-endif
-
 BPF_DIR = $(srctree)/libbpf/src
 
 ifneq ($(OUTPUT),)
