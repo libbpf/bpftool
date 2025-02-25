@@ -66,7 +66,7 @@ else
   need_libzstd := $(findstring 1, $(call libelf_zstd_build))
 endif
 ifeq ($(need_libzstd),1)
-  LIBZSTD_FLAG := -lzstd
+  LIBZSTD_FLAG := -lzstd -lsframe
 endif
 
 LIBBFD_PROBE := '$(pound)include <bfd.h>\n'

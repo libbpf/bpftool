@@ -37,6 +37,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
               libbfd-dev libcap-dev libelf-dev libiberty-dev python3-docutils
+          # Install libsframe1 on Ubuntu 24.04+
+          sudo apt install -y libsframe1 || true
           # clang/LLVM are already installed, but we're missing some aliases.
           CLANG_VERSION="$(echo '__clang_major__' | clang -E - | tail -n 1)"
           sudo update-alternatives \
