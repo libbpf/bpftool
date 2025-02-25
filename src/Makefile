@@ -180,6 +180,9 @@ else
     ifeq ($(feature-disassembler-init-styled), 1)
       CFLAGS += -DDISASM_INIT_STYLED
     endif
+    ifeq ($(feature-libelf-zstd),1)
+      LIBS += -lsframe
+    endif
   endif
 endif
 ifeq ($(filter -DHAVE_LLVM_SUPPORT -DHAVE_LIBBFD_SUPPORT,$(CFLAGS)),)
