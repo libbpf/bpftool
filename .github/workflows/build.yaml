@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     env:
       FEATURES: .llvm and .skeletons
@@ -31,12 +31,6 @@ jobs:
         uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3 # v3.5.0
         with:
           submodules: true
-
-      - name: Use clang-12 and not clang-11 for older Ubuntu
-        if: matrix.os == 'ubuntu-20.04'
-        run: |
-          sudo apt-get remove -y clang-11 llvm-11
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 50
 
       - name: Install dependencies
         run: |
