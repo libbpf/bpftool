@@ -37,6 +37,28 @@ feature-clang-bpf-co-re := \
   $(findstring 1,$(call detect,$(CLANG_BPF_CO_RE_PROBE_CMD)))
 endif # clang-bpf-co-re
 
+### feature-libelf-zstd
+
+# Define these unconditionally so we can also use the probe for feature-libbfd
+LIBELF_ZSTD_PROBE := '$(pound)include <libelf.h>\n'
+LIBELF_ZSTD_PROBE += 'int main(void) {'
+LIBELF_ZSTD_PROBE += '	elf_compress(0, ELFCOMPRESS_ZSTD, 0);'
+LIBELF_ZSTD_PROBE += '	return 0;'
+LIBELF_ZSTD_PROBE += '}'
+
+LIBELF_ZSTD_PROBE_CMD = printf '%b\n' $(LIBELF_ZSTD_PROBE) | \
+  $(CC) $(CFLAGS) -Wall -Werror -x c - $(LDFLAGS) -lelf -lz -lzstd \
+    -o /dev/null >/dev/null
+
+define libelf_zstd_build
+  $(call detect,$(LIBELF_ZSTD_PROBE_CMD))
+endef
+
+ifneq ($(findstring libelf-zstd,$(FEATURE_TESTS)),)
+$(call LOG,Probing: feature-libelf-zstd)
+feature-libelf-zstd := $(findstring 1, $(call libelf_zstd_build))
+endif # libelf-zstd
+
 ### feature-libbfd
 
 ifneq ($(findstring libbfd,$(FEATURE_TESTS)),)
@@ -79,7 +101,8 @@ DISASSEMBLER_PROBE += '	return 0;'
 DISASSEMBLER_PROBE += '}'
 
 DISASSEMBLER_PROBE_CMD = printf '%b\n' $(1) | \
-  $(CC) $(CFLAGS) -Wall -Werror -x c -DPACKAGE='"bpftool"' - $(LDFLAGS) -lbfd -lopcodes -S -o - >/dev/null
+  $(CC) $(CFLAGS) -Wall -Werror -x c -DPACKAGE='"bpftool"' - $(LDFLAGS) -lbfd -lopcodes -S \
+    -o /dev/null >/dev/null
 define disassembler_build
   $(call detect,$(DISASSEMBLER_PROBE_CMD))
 endef
@@ -112,7 +135,7 @@ LIBCAP_PROBE += '	cap_free(0);'
 LIBCAP_PROBE += '	return 0;'
 LIBCAP_PROBE += '}'
 LIBCAP_PROBE_CMD = printf '%b\n' $(LIBCAP_PROBE) | \
-  $(CC) $(CFLAGS) -Wall -Werror -x c - $(LDFLAGS) -lcap -S -o - >/dev/null
+  $(CC) $(CFLAGS) -Wall -Werror -x c - $(LDFLAGS) -lcap -S -o /dev/null >/dev/null
 
 define libcap_build
   $(call detect,$(LIBCAP_PROBE_CMD))
