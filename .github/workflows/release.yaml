@@ -18,7 +18,7 @@ env:
 jobs:
   build:
     name: Build static bpftool binary
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TARGETARCH: ${{ matrix.arch }}
       FILE_STRING_ARCH_amd64: x86-64
@@ -33,7 +33,7 @@ jobs:
         if: matrix.arch == 'amd64'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libelf-dev libcap-dev
+          sudo apt-get install -y libelf-dev libcap-dev libsframe1
 
       - name: Download and extract compiled LLVM release
         env:
@@ -111,7 +111,7 @@ jobs:
 
   draft-release:
     name: Create a draft release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     needs: build
     permissions:
       contents: write
