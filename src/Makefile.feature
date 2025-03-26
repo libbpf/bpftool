@@ -91,7 +91,7 @@ endif # disassembler-four-args
 ifneq ($(findstring disassembler-init-styled,$(FEATURE_TESTS)),)
 DISASSEMBLER_STYLED_PROBE := '$(pound)include <dis-asm.h>\n'
 DISASSEMBLER_STYLED_PROBE += 'int main(void) {'
-DISASSEMBLER_STYLED_PROBE += '	init_disassemble_info(NULL, 0, NULL, NULL);'
+DISASSEMBLER_STYLED_PROBE += '	init_disassemble_info(NULL, 0, NULL);'
 DISASSEMBLER_STYLED_PROBE += '	return 0;'
 DISASSEMBLER_STYLED_PROBE += '}'
 
@@ -99,6 +99,26 @@ $(call LOG,Probing: feature-disassembler-styled)
 feature-disassembler-init-styled := \
     $(findstring 1, $(call disassembler_build,$(DISASSEMBLER_STYLED_PROBE)))
 endif # disassembler-init-styled
+
+### feature-libelf-zstd
+
+ifneq ($(findstring libelf-zstd,$(FEATURE_TESTS)),)
+LIBELF_ZSTD_PROBE := '$(pound)include <elf.h>\n'
+LIBELF_ZSTD_PROBE += 'int main(void) {'
+LIBELF_ZSTD_PROBE += '	Elf *e = NULL;'
+LIBELF_ZSTD_PROBE += '	return 0;'
+LIBELF_ZSTD_PROBE += '}'
+LIBELF_ZSTD_PROBE_CMD = printf '%b\n' $(LIBELF_ZSTD_PROBE) | \
+  $(CC) $(CFLAGS) -Wall -Werror -x c - -lelf -lz -S -o - >/dev/null
+
+define libelf_zstd_build
+  $(call detect,$(LIBELF_ZSTD_PROBE_CMD))
+endef
+
+$(call LOG,Probing: feature-libelf-zstd)
+feature-libelf-zstd := \
+    $(findstring 1, $(call libelf_zstd_build))
+endif # libelf-zstd
 
 ### feature-libcap
 
@@ -157,6 +177,7 @@ $(call LOG,Probing: feature-llvm)
 feature-llvm := $(findstring 1, $(call llvm_build))
 endif # llvm
 
+
 ### Print detection results
 
 define print_status
@@ -169,9 +190,15 @@ endef
 feature_print_status = $(eval $(print_status)) $(info $(MSG))
 
 $(call feature_print_status,$(HAS_LIBBFD),libbfd)
+$(call feature_print_status,$(feature-libbfd-liberty),libbfd-liberty)
+$(call feature_print_status,$(feature-libbfd-liberty-z),libbfd-liberty-z)
 
 $(foreach feature,$(filter-out libbfd%,$(FEATURE_DISPLAY)), \
   $(call feature_print_status,$(feature-$(feature)),$(feature)))
+
+$(call feature_print_status,$(feature-disassembler-four-args),disassembler-four-args)
+$(call feature_print_status,$(feature-disassembler-init-styled),disassembler-init-styled)
+$(call feature_print_status,$(feature-libelf-zstd),libelf-zstd)
 
 CFLAGS := $(CFLAGS_BACKUP)
 undefine LOG LOG_RES
