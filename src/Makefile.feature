@@ -177,7 +177,6 @@ $(call LOG,Probing: feature-llvm)
 feature-llvm := $(findstring 1, $(call llvm_build))
 endif # llvm
 
-
 ### Print detection results
 
 define print_status
