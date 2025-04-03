@@ -43,6 +43,12 @@ EXTRA_WARNINGS := \
 	-Wundef \
 	-Wwrite-strings \
 
+ifeq ($(V),1)
+  Q =
+else
+  Q = @
+endif
+
 define descend
   mkdir -p $(OUTPUT)$(1) && \
     $(MAKE) --no-print-directory -C $(1) $(2)
