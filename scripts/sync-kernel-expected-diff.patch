@@ -21,7 +21,7 @@
  libbpf
 --- src/Makefile
 +++ src/Makefile
-@@ -1,10 +1,8 @@
+@@ -1,13 +1,11 @@
  # SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
 -include ../../scripts/Makefile.include
 +include Makefile.include
@@ -32,17 +32,12 @@
 -srctree := $(patsubst %/,%,$(dir $(srctree)))
  endif
  
- ifeq ($(V),1)
-@@ -13,7 +11,7 @@
-   Q = @
- endif
- 
 -BPF_DIR = $(srctree)/tools/lib/bpf
 +BPF_DIR = $(srctree)/libbpf/src
  
  ifneq ($(OUTPUT),)
    _OUTPUT := $(OUTPUT)
-@@ -43,16 +41,16 @@
+@@ -37,16 +35,16 @@
  	$(QUIET_MKDIR)mkdir -p $@
  
  $(LIBBPF): $(wildcard $(BPF_DIR)/*.[ch] $(BPF_DIR)/Makefile) | $(LIBBPF_OUTPUT)
@@ -63,7 +58,7 @@
  		ARCH= CROSS_COMPILE= CC="$(HOSTCC)" LD="$(HOSTLD)" AR="$(HOSTAR)" $@ install_headers
  
  $(LIBBPF_BOOTSTRAP_INTERNAL_HDRS): $(LIBBPF_BOOTSTRAP_HDRS_DIR)/%.h: $(BPF_DIR)/%.h | $(LIBBPF_BOOTSTRAP_HDRS_DIR)
-@@ -76,9 +74,9 @@
+@@ -75,9 +73,9 @@
  CFLAGS += -DPACKAGE='"bpftool"' -D__EXPORTED_HEADERS__ \
  	-I$(or $(OUTPUT),.) \
  	-I$(LIBBPF_INCLUDE) \
@@ -89,7 +84,7 @@
  endif
  
  LIBS = $(LIBBPF) -lelf -lz
-@@ -214,7 +208,7 @@
+@@ -225,7 +219,7 @@
  $(OUTPUT)%.bpf.o: skeleton/%.bpf.c $(OUTPUT)vmlinux.h $(LIBBPF_BOOTSTRAP)
  	$(QUIET_CLANG)$(CLANG) \
  		-I$(or $(OUTPUT),.) \
@@ -98,7 +93,7 @@
  		-I$(LIBBPF_BOOTSTRAP_INCLUDE) \
  		-g -O2 -Wall -fno-stack-protector \
  		--target=bpf -c $< -o $@
-@@ -232,7 +226,7 @@
+@@ -243,7 +237,7 @@
  
  CFLAGS += $(if $(BUILD_BPF_SKELS),,-DBPFTOOL_WITHOUT_SKELETONS)
  
@@ -107,7 +102,7 @@
  	$(QUIET_CC)$(CC) $(CFLAGS) -c -MMD $< -o $@
  
  $(BPFTOOL_BOOTSTRAP): $(BOOTSTRAP_OBJS) $(LIBBPF_BOOTSTRAP)
-@@ -251,7 +245,7 @@
+@@ -262,7 +256,7 @@
  	$(call QUIET_CLEAN, feature-detect)
  	$(Q)$(MAKE) -C $(srctree)/tools/build/feature/ clean >/dev/null
  
@@ -116,7 +111,7 @@
  	$(call QUIET_CLEAN, bpftool)
  	$(Q)$(RM) -- $(OUTPUT)bpftool $(OUTPUT)*.o $(OUTPUT)*.d
  	$(Q)$(RM) -- $(OUTPUT)*.skel.h $(OUTPUT)vmlinux.h
-@@ -267,7 +261,7 @@
+@@ -278,7 +272,7 @@
  
  install: install-bin
  	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(bash_compdir)
@@ -125,7 +120,7 @@
  
  uninstall:
  	$(call QUIET_UNINST, bpftool)
-@@ -275,16 +269,16 @@
+@@ -286,16 +280,16 @@
  	$(Q)$(RM) -- $(DESTDIR)$(bash_compdir)/bpftool
  
  doc:
