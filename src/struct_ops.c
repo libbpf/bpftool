@@ -521,8 +521,7 @@ static int do_register(int argc, char **argv)
 	}
 
 	if (verifier_logs)
-		/* log_level1 + log_level2 + stats, but not stable UAPI */
-		open_opts.kernel_log_level = 1 + 2 + 4;
+		open_opts.kernel_log_level = verifier_log_lvl;
 
 	obj = bpf_object__open_file(file, &open_opts);
 	if (!obj)

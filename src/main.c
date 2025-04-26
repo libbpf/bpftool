@@ -19,6 +19,8 @@
 #define BATCH_LINE_LEN_MAX 65536
 #define BATCH_ARG_NB_MAX 4096
 
+#define VERIFIER_LOG_LVL_MAX (1 + 2 + 4) /* log_level1 + log_level2 + stats, but not stable UAPI */
+
 const char *bin_name;
 static int last_argc;
 static char **last_argv;
@@ -28,11 +30,12 @@ bool pretty_output;
 bool json_output;
 bool show_pinned;
 bool block_mount;
-bool verifier_logs;
 bool relaxed_maps;
 bool use_loader;
 struct btf *base_btf;
 struct hashmap *refs_table;
+bool verifier_logs;
+__u32 verifier_log_lvl;
 
 static void __noreturn clean_and_exit(int i)
 {
@@ -445,7 +448,7 @@ int main(int argc, char **argv)
 		{ "bpffs",	no_argument,	NULL,	'f' },
 		{ "mapcompat",	no_argument,	NULL,	'm' },
 		{ "nomount",	no_argument,	NULL,	'n' },
-		{ "debug",	no_argument,	NULL,	'd' },
+		{ "debug",	optional_argument,	NULL,	'd' },
 		{ "use-loader",	no_argument,	NULL,	'L' },
 		{ "base-btf",	required_argument, NULL, 'B' },
 		{ 0 }
@@ -473,7 +476,7 @@ int main(int argc, char **argv)
 	bin_name = "bpftool";
 
 	opterr = 0;
-	while ((opt = getopt_long(argc, argv, "VhpjfLmndB:l",
+	while ((opt = getopt_long(argc, argv, "VhpjfLmnd::B:l",
 				  options, NULL)) >= 0) {
 		switch (opt) {
 		case 'V':
@@ -507,6 +510,15 @@ int main(int argc, char **argv)
 		case 'd':
 			libbpf_set_print(print_all_levels);
 			verifier_logs = true;
+			verifier_log_lvl = VERIFIER_LOG_LVL_MAX;
+			if (optarg) {
+				verifier_log_lvl = (__u32)strtoul(optarg, NULL, 10);
+				if (verifier_log_lvl > VERIFIER_LOG_LVL_MAX) {
+					p_err("failed to parse log level at '%s'\n",
+						optarg);
+					return -1;
+				}
+			}
 			break;
 		case 'B':
 			base_btf = btf__parse(optarg, NULL);

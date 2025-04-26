@@ -1691,8 +1691,7 @@ offload_dev:
 	set_max_rlimit();
 
 	if (verifier_logs)
-		/* log_level1 + log_level2 + stats, but not stable UAPI */
-		open_opts.kernel_log_level = 1 + 2 + 4;
+		open_opts.kernel_log_level = verifier_log_lvl;
 
 	obj = bpf_object__open_file(file, &open_opts);
 	if (!obj) {
@@ -1885,7 +1884,7 @@ static int try_loader(struct gen_loader_opts *gen)
 	memset(ctx, 0, ctx_sz);
 	ctx->sz = ctx_sz;
 	if (verifier_logs) {
-		ctx->log_level = 1 + 2 + 4;
+		ctx->log_level = verifier_log_lvl;
 		ctx->log_size = log_buf_sz;
 		log_buf = malloc(log_buf_sz);
 		if (!log_buf)
@@ -1923,8 +1922,7 @@ static int do_loader(int argc, char **argv)
 	file = GET_ARG();
 
 	if (verifier_logs)
-		/* log_level1 + log_level2 + stats, but not stable UAPI */
-		open_opts.kernel_log_level = 1 + 2 + 4;
+		open_opts.kernel_log_level = verifier_log_lvl;
 
 	obj = bpf_object__open_file(file, &open_opts);
 	if (!obj) {

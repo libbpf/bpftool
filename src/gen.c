@@ -1231,8 +1231,7 @@ static int do_skeleton(int argc, char **argv)
 		get_obj_name(obj_name, file);
 	opts.object_name = obj_name;
 	if (verifier_logs)
-		/* log_level1 + log_level2 + stats, but not stable UAPI */
-		opts.kernel_log_level = 1 + 2 + 4;
+		opts.kernel_log_level = verifier_log_lvl;
 	obj = bpf_object__open_mem(obj_data, file_sz, &opts);
 	if (!obj) {
 		char err_buf[256];

@@ -79,11 +79,13 @@ extern bool json_output;
 extern bool show_pinned;
 extern bool show_pids;
 extern bool block_mount;
-extern bool verifier_logs;
 extern bool relaxed_maps;
 extern bool use_loader;
 extern struct btf *base_btf;
 extern struct hashmap *refs_table;
+
+extern bool verifier_logs;
+extern __u32 verifier_log_lvl;
 
 void __printf(1, 2) p_err(const char *fmt, ...);
 void __printf(1, 2) p_info(const char *fmt, ...);
