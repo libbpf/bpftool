@@ -21,7 +21,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
+        include:
+          - os: ubuntu-22.04
+            make: make
+          - os: macos-14
+            make: gmake
+        os: [ubuntu-22.04, macos-14]
     runs-on: ${{ matrix.os }}
     env:
       FEATURES: .llvm and .skeletons
@@ -32,7 +37,8 @@ jobs:
         with:
           submodules: true
 
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -45,9 +51,37 @@ jobs:
               --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-"${CLANG_VERSION}"
           echo "CLANG_VERSION=${CLANG_VERSION}" >> "${GITHUB_ENV}"
 
+      - name: Install dependencies (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew update
+          brew install \
+              binutils \
+              libelf \
+              docutils \
+              jq \
+              llvm \
+              make
+
+          # Set up LLVM paths and aliases
+          LLVM_PATH="$(brew --prefix llvm)"
+          CLANG_VERSION="$(echo '__clang_major__' | ${LLVM_PATH}/bin/clang -E - | tail -n 1)"
+
+          # Create symlinks for LLVM tools in a directory that's in PATH
+          mkdir -p "${HOME}/bin"
+          ln -sf "${LLVM_PATH}/bin/llvm-config" "${HOME}/bin/llvm-config"
+          ln -sf "${LLVM_PATH}/bin/llvm-ar" "${HOME}/bin/llvm-ar"
+          ln -sf "${LLVM_PATH}/bin/llvm-strip" "${HOME}/bin/llvm-strip"
+          ln -sf "${LLVM_PATH}/bin/clang" "${HOME}/bin/clang"
+
+          # Add to PATH
+          echo "${HOME}/bin" >> $GITHUB_PATH
+          echo "CLANG_VERSION=${CLANG_VERSION}" >> "${GITHUB_ENV}"
+          echo "LLVM_PATH=${LLVM_PATH}" >> "${GITHUB_ENV}"
+
       - name: Build bpftool (default LLVM disassembler)
         run: |
-          make -j -C src V=1
+          ${{ matrix.make }} -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
@@ -55,27 +89,29 @@ jobs:
 
       - name: Build bpftool, with clang
         run: |
-          make -C src clean
-          LLVM=1 make -j -C src V=1
+          ${{ matrix.make }} -C src clean
+          LLVM=1 ${{ matrix.make }} -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
               jq --exit-status ".features | ${FEATURES}"
 
-      - name: Build bpftool, with fallback to libbfd disassembler
+      - name: Build bpftool, with fallback to libbfd disassembler (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get remove -y llvm-"${CLANG_VERSION}"-dev
-          make -C src clean
-          make -j -C src V=1
+          ${{ matrix.make }} -C src clean
+          ${{ matrix.make }} -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
               jq --exit-status ".features | .libbfd and (.llvm | not)"
 
-      - name: Build bpftool, with libbfd, static build
+      - name: Build bpftool, with libbfd, static build (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
-          make -C src clean
-          EXTRA_CFLAGS=--static make -j -C src V=1
+          ${{ matrix.make }} -C src clean
+          EXTRA_CFLAGS=--static ${{ matrix.make }} -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
@@ -86,5 +122,5 @@ jobs:
 
       - name: Build bpftool's documentation
         run: |
-          make -j -C docs
+          ${{ matrix.make }} -j -C docs
           grep -q '.TH "\?BPFTOOL"\? 8' ./docs/bpftool.8
