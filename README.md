@@ -54,6 +54,11 @@ reported on the mailing list nonetheless.
 Dependencies
 ------------
 
+> [!NOTE]
+> Building bpftool is only supported on Linux. The build process relies on
+> Linux-specific headers and tools, and is not expected to work on macOS or
+> other non-Linux systems.
+
 Required:
 
 - libelf
