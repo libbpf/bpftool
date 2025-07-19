@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
+        os: [ubuntu-22.04, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     env:
       FEATURES: .llvm and .skeletons
@@ -44,6 +44,11 @@ jobs:
               --slave /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-"${CLANG_VERSION}" \
               --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-"${CLANG_VERSION}"
           echo "CLANG_VERSION=${CLANG_VERSION}" >> "${GITHUB_ENV}"
+
+      - name: Install libsframe (Ubuntu 24.04+)
+        if: matrix.os == 'ubuntu-20.04'
+        run: |
+          sudo apt-get install -y libsframe1
 
       - name: Build bpftool (default LLVM disassembler)
         run: |
@@ -75,7 +80,18 @@ jobs:
       - name: Build bpftool, with libbfd, static build
         run: |
           make -C src clean
-          EXTRA_LDFLAGS=-static make -j -C src V=1
+          if [[ "${{ matrix.os }}" == "ubuntu-24.04" ]]; then
+              # FIXME - See #73
+              echo "... building bootstrap bpftool"
+              EXTRA_LDFLAGS=-static make -j -C src V=1 \
+                  LIBS="./bootstrap/libbpf/libbpf.a -lelf -lz -lzstd -lcap -lbfd -ldl -liberty -lz -lzstd -lsframe -lopcodes" \
+                  bootstrap
+              echo "... building main bpftool binary"
+              EXTRA_LDFLAGS=-static make -j -C src V=1 \
+                  LIBS="./libbpf/libbpf.a -lelf -lz -lzstd -lcap -lbfd -ldl -liberty -lz -lzstd -lsframe -lopcodes"
+          else
+              EXTRA_LDFLAGS=-static make -j -C src V=1
+          fi
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
