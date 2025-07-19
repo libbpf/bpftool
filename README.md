@@ -123,7 +123,7 @@ example, we can create a static build with the following commands:
 
 ```console
 $ cd src
-$ EXTRA_CFLAGS=--static make
+$ EXTRA_LDFLAGS=-static make
 ```
 
 Note that to use the LLVM disassembler with static builds, we need a static
@@ -150,12 +150,12 @@ version of the LLVM library installed on the system:
       $ make -j -C llvm_build llvm-config llvm-libraries
       ```
 
-2.  Build bpftool with `EXTRA_CFLAGS` set to `--static`, and by passing the
+2.  Build bpftool with `EXTRA_LDFLAGS` set to `-static`, and by passing the
     path to the relevant `llvm-config`.
 
     ```console
     $ cd bpftool
-    $ LLVM_CONFIG=../../llvm_build/bin/llvm-config EXTRA_CFLAGS=--static make -j -C src
+    $ LLVM_CONFIG=../../llvm_build/bin/llvm-config EXTRA_LDFLAGS=-static make -j -C src
     ```
 
 ### Build bpftool's man pages

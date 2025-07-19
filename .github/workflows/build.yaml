@@ -75,7 +75,7 @@ jobs:
       - name: Build bpftool, with libbfd, static build
         run: |
           make -C src clean
-          EXTRA_CFLAGS=--static make -j -C src V=1
+          EXTRA_LDFLAGS=-static make -j -C src V=1
           ./src/bpftool 2>&1 | grep -q Usage
           ./src/bpftool -p version | \
               tee /dev/stderr | \
