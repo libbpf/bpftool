@@ -87,7 +87,7 @@ jobs:
         env:
           LLVM_PATH: ${{ env[format('LLVM_{0}', matrix.arch)] }}
         run: |
-          EXTRA_CFLAGS=--static \
+          EXTRA_LDFLAGS=-static \
               LLVM_CONFIG="${GITHUB_WORKSPACE}/${{ env.LLVM_PATH }}/bin/llvm-config" \
               LLVM_STRIP="${GITHUB_WORKSPACE}/${{ env.LLVM_PATH }}/bin/llvm-strip" \
               HOSTAR="${GITHUB_WORKSPACE}/${{ env.LLVM_PATH }}/bin/llvm-ar" \
@@ -112,7 +112,7 @@ jobs:
                    apt-get install -y make pkg-config gcc \
                        libelf-dev libcap-dev libstdc++-11-dev zlib1g-dev && \
                    cd /build/bpftool && \
-                   EXTRA_CFLAGS=--static \
+                   EXTRA_LDFLAGS=-static \
                        LLVM_CONFIG='/build/${{ env.LLVM_PATH }}/bin/llvm-config' \
                        LLVM_STRIP='/build/${{ env.LLVM_PATH }}/bin/llvm-strip' \
                        CLANG='/build/${{ env.LLVM_PATH }}/bin/clang' \

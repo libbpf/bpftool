@@ -43,7 +43,7 @@ jobs:
       - name: Build bpftool (static build, default LLVM disassembler)
         working-directory: 'bpftool'
         run: |
-          EXTRA_CFLAGS=--static \
+          EXTRA_LDFLAGS=-static \
               LLVM_CONFIG="${GITHUB_WORKSPACE}/${LLVM_PATH}/bin/llvm-config" \
               LLVM_STRIP="${GITHUB_WORKSPACE}/${LLVM_PATH}/bin/llvm-strip" \
               make -j -C src V=1
