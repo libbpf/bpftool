@@ -5,7 +5,7 @@
 
 # hadolint global ignore=DL3008
 
-FROM ubuntu:22.04 as builder
+FROM ubuntu:22.04 AS builder
 
 RUN \
 	export DEBIAN_FRONTEND=noninteractive && \
