@@ -45,11 +45,6 @@ jobs:
               --slave /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-"${CLANG_VERSION}"
           echo "CLANG_VERSION=${CLANG_VERSION}" >> "${GITHUB_ENV}"
 
-      - name: Install libsframe (Ubuntu 24.04+)
-        if: matrix.os == 'ubuntu-20.04'
-        run: |
-          sudo apt-get install -y libsframe1
-
       - name: Build bpftool (default LLVM disassembler)
         run: |
           make -j -C src V=1
