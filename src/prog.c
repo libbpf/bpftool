@@ -714,7 +714,7 @@ prog_dump(struct bpf_prog_info *info, enum dump_mode mode,
 
 	if (mode == DUMP_JITED) {
 		if (info->jited_prog_len == 0 || !info->jited_prog_insns) {
-			p_info("no instructions returned");
+			p_info("no instructions returned: kernel.kptr_restrict set?");
 			return -1;
 		}
 		buf = u64_to_ptr(info->jited_prog_insns);
