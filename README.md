@@ -62,6 +62,7 @@ Dependencies
 Required:
 
 - libelf
+- libssl-dev
 - zlib
 
 Optional:

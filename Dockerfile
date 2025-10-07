@@ -15,6 +15,7 @@ RUN \
 		libelf-dev \
 		libz-dev \
 		libcap-dev \
+		libssl-dev \
 		clang llvm llvm-dev lld \
 		binutils-dev \
 		pkg-config && \

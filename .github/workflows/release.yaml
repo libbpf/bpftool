@@ -63,7 +63,7 @@ jobs:
         if: matrix.arch == 'amd64'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libelf-dev libcap-dev
+          sudo apt-get install -y libelf-dev libcap-dev libssl-dev
 
       - name: Download and extract compiled LLVM release
         env:
