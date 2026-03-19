@@ -109,7 +109,7 @@ jobs:
         run:  |
           docker run --platform linux/arm64 --rm -v $(pwd):/build ubuntu:22.04 \
           bash -c "apt-get update && \
-                   apt-get install -y make pkg-config gcc \
+                   apt-get install -y make pkg-config gcc libssl-dev \
                        libelf-dev libcap-dev libstdc++-11-dev zlib1g-dev && \
                    cd /build/bpftool && \
                    EXTRA_LDFLAGS=-static \
