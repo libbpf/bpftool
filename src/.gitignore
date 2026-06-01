@@ -3,6 +3,7 @@
 *.d
 /bootstrap/
 /bpftool
+/bpftool-llvm.so
 FEATURE-DUMP.bpftool
 feature
 libbpf

@@ -60,6 +60,7 @@ $(LIBBPF_BOOTSTRAP)-clean: FORCE | $(LIBBPF_BOOTSTRAP_OUTPUT)
 	$(Q)$(MAKE) -C $(BPF_DIR) OUTPUT=$(LIBBPF_BOOTSTRAP_OUTPUT) clean >/dev/null
 
 prefix ?= /usr/local
+libdir ?= $(prefix)/lib
 bash_compdir ?= /usr/share/bash-completion/completions
 
 CFLAGS += -O2
@@ -151,6 +152,8 @@ include $(wildcard $(OUTPUT)*.d)
 all: $(OUTPUT)bpftool
 
 SRCS := $(wildcard *.c)
+# llvm_disasm.c is compiled separately into the bpftool-llvm.so plugin.
+SRCS := $(filter-out llvm_disasm.c,$(SRCS))
 
 ifeq ($(feature-llvm),1)
 ifneq ($(SKIP_LLVM),1)
@@ -159,19 +162,36 @@ endif
 endif
 
 ifeq ($(HAS_LLVM),1)
+  # The libLLVM-based JIT disassembler is built as a separate plugin,
+  # bpftool-llvm.so, which is the only object that links against libLLVM.
+  # bpftool loads it lazily with dlopen() (see jit_disasm.c), so the bpftool
+  # binary itself keeps no dependency on the large libLLVM shared object.
   CFLAGS  += -DHAVE_LLVM_SUPPORT
+  CFLAGS  += -DLLVM_PLUGIN_DIR='"$(libdir)/bpftool"'
+  # dlopen() lives in libc on modern glibc, but keep -ldl for portability.
+  LIBS    += -ldl
+
+  # Flags used to build the plugin itself (the only part that needs libLLVM).
   LLVM_CONFIG_LIB_COMPONENTS := mcdisassembler all-targets
-  # llvm-config always adds -D_GNU_SOURCE, however, it may already be in CFLAGS
-  # (e.g. when bpftool build is called from selftests build as selftests
-  # Makefile includes lib.mk which sets -D_GNU_SOURCE) which would cause
-  # compilation error due to redefinition. Let's filter it out here.
-  CFLAGS  += $(filter-out -D_GNU_SOURCE,$(shell $(LLVM_CONFIG) --cflags))
-  LIBS    += $(shell $(LLVM_CONFIG) --libs $(LLVM_CONFIG_LIB_COMPONENTS))
+  # llvm-config always adds -D_GNU_SOURCE, which llvm_disasm.c already defines;
+  # filter it out to avoid a redefinition warning.
+  LLVM_PLUGIN_CFLAGS := $(filter-out -D_GNU_SOURCE,$(shell $(LLVM_CONFIG) --cflags))
+
+  # Embed libLLVM into the plugin statically when requested with
+  # LLVM_LINK_STATIC=1, or when this LLVM install only ships static libraries
+  # ("llvm-config --shared-mode" reports "static"). Otherwise link the shared
+  # libLLVM, which is the only runtime dependency of the plugin.
   ifeq ($(shell $(LLVM_CONFIG) --shared-mode),static)
-    LIBS += $(shell $(LLVM_CONFIG) --system-libs $(LLVM_CONFIG_LIB_COMPONENTS))
-    LIBS += -lstdc++
+    LLVM_LINK_STATIC := 1
   endif
-  LDFLAGS += $(shell $(LLVM_CONFIG) --ldflags)
+  ifeq ($(LLVM_LINK_STATIC),1)
+    LLVM_PLUGIN_LIBS := $(shell $(LLVM_CONFIG) --link-static --libs $(LLVM_CONFIG_LIB_COMPONENTS))
+    LLVM_PLUGIN_LIBS += $(shell $(LLVM_CONFIG) --link-static --system-libs $(LLVM_CONFIG_LIB_COMPONENTS))
+    LLVM_PLUGIN_LIBS += -lstdc++
+  else
+    LLVM_PLUGIN_LIBS := $(shell $(LLVM_CONFIG) --libs $(LLVM_CONFIG_LIB_COMPONENTS))
+  endif
+  LLVM_PLUGIN_LDFLAGS := $(shell $(LLVM_CONFIG) --ldflags)
 else
   ifneq ($(SKIP_LIBBFD),1)
   # Fall back on libbfd
@@ -270,6 +290,20 @@ $(BPFTOOL_BOOTSTRAP): $(BOOTSTRAP_OBJS) $(LIBBPF_BOOTSTRAP)
 $(OUTPUT)bpftool: $(OBJS) $(LIBBPF)
 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 
+ifeq ($(HAS_LLVM),1)
+all: $(OUTPUT)bpftool-llvm.so
+
+$(OUTPUT)llvm_disasm.o: llvm_disasm.c
+	$(QUIET_CC)$(CC) $(CFLAGS) $(LLVM_PLUGIN_CFLAGS) -fPIC -c -MMD $< -o $@
+
+# The plugin is a shared object by definition, so drop a global -static (e.g.
+# from EXTRA_LDFLAGS for a static bpftool) which would conflict with -shared.
+# Embedding libLLVM statically is controlled separately (see LLVM_LINK_STATIC).
+$(OUTPUT)bpftool-llvm.so: $(OUTPUT)llvm_disasm.o
+	$(QUIET_LINK)$(CC) $(CFLAGS) $(filter-out -static,$(LDFLAGS)) \
+		$(LLVM_PLUGIN_LDFLAGS) -shared -o $@ $< $(LLVM_PLUGIN_LIBS)
+endif
+
 $(BOOTSTRAP_OUTPUT)%.o: %.c $(LIBBPF_BOOTSTRAP_INTERNAL_HDRS) | $(BOOTSTRAP_OUTPUT)
 	$(QUIET_CC)$(HOSTCC) $(HOST_CFLAGS) -c -MMD $< -o $@
 
@@ -282,17 +316,25 @@ feature-detect-clean:
 
 clean: $(LIBBPF)-clean $(LIBBPF_BOOTSTRAP)-clean
 	$(call QUIET_CLEAN, bpftool)
-	$(Q)$(RM) -- $(OUTPUT)bpftool $(OUTPUT)*.o $(OUTPUT)*.d
+	$(Q)$(RM) -- $(OUTPUT)bpftool $(OUTPUT)bpftool-llvm.so $(OUTPUT)*.o $(OUTPUT)*.d
 	$(Q)$(RM) -- $(OUTPUT)*.skel.h $(OUTPUT)vmlinux.h
 	$(Q)$(RM) -r -- $(LIBBPF_OUTPUT) $(BOOTSTRAP_OUTPUT)
 	$(call QUIET_CLEAN, core-gen)
 	$(Q)$(RM) -- $(OUTPUT)FEATURE-DUMP.bpftool
 	$(Q)$(RM) -r -- $(OUTPUT)feature/
 
+ifeq ($(HAS_LLVM),1)
+install-bin: $(OUTPUT)bpftool-llvm.so
+endif
 install-bin: $(OUTPUT)bpftool
 	$(call QUIET_INSTALL, bpftool)
 	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(prefix)/sbin
 	$(Q)$(INSTALL) $(OUTPUT)bpftool $(DESTDIR)$(prefix)/sbin/bpftool
+ifeq ($(HAS_LLVM),1)
+	$(call QUIET_INSTALL, bpftool-llvm.so)
+	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(libdir)/bpftool
+	$(Q)$(INSTALL) -m 0755 $(OUTPUT)bpftool-llvm.so $(DESTDIR)$(libdir)/bpftool/bpftool-llvm.so
+endif
 
 install: install-bin
 	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(bash_compdir)
@@ -301,6 +343,7 @@ install: install-bin
 uninstall:
 	$(call QUIET_UNINST, bpftool)
 	$(Q)$(RM) -- $(DESTDIR)$(prefix)/sbin/bpftool
+	$(Q)$(RM) -- $(DESTDIR)$(libdir)/bpftool/bpftool-llvm.so
 	$(Q)$(RM) -- $(DESTDIR)$(bash_compdir)/bpftool
 
 doc:
