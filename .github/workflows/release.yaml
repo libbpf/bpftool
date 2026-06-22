@@ -30,7 +30,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0  # Fetch all tags
 
@@ -73,7 +73,7 @@ jobs:
           tar -xvf "${{ env.LLVM }}.tar.xz"
 
       - name: Checkout bpftool code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
           # Create a new directory to avoid wiping out LLVM on bpftool checkout
@@ -161,7 +161,7 @@ jobs:
           sha256sum "${archive_arm64}" > "${archive_arm64}.sha256sum"
 
       - name: Checkout bpftool and libbpf code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
           path: 'bpftool'
