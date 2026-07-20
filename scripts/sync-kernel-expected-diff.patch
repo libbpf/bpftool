@@ -55,10 +55,10 @@
 -		DESTDIR=$(LIBBPF_BOOTSTRAP_DESTDIR:/=) prefix= \
 +	$(Q)$(MAKE) -C $(BPF_DIR) OBJDIR=$(patsubst %/,%,$(LIBBPF_BOOTSTRAP_OUTPUT)) \
 +		DESTDIR="" PREFIX=$(LIBBPF_BOOTSTRAP_DESTDIR:/=) \
- 		ARCH= CROSS_COMPILE= CC="$(HOSTCC)" LD="$(HOSTLD)" AR="$(HOSTAR)" $@ install_headers
+ 		ARCH= CROSS_COMPILE= CC="$(HOSTCC)" LD="$(HOSTLD)" AR="$(HOSTAR)" \
+ 		CFLAGS="$(LIBBPF_BOOTSTRAP_CFLAGS)" EXTRA_CFLAGS= $@ install_headers
  
- $(LIBBPF_BOOTSTRAP_INTERNAL_HDRS): $(LIBBPF_BOOTSTRAP_HDRS_DIR)/%.h: $(BPF_DIR)/%.h | $(LIBBPF_BOOTSTRAP_HDRS_DIR)
-@@ -75,9 +73,9 @@
+@@ -76,9 +74,9 @@
  CFLAGS += -DPACKAGE='"bpftool"' -D__EXPORTED_HEADERS__ \
  	-I$(or $(OUTPUT),.) \
  	-I$(LIBBPF_INCLUDE) \
@@ -71,7 +71,7 @@
  ifneq ($(BPFTOOL_VERSION),)
  CFLAGS += -DBPFTOOL_VERSION='"$(BPFTOOL_VERSION)"'
  endif
-@@ -123,11 +121,7 @@
+@@ -146,11 +144,7 @@
  endif
  
  ifeq ($(check_feat),1)
@@ -83,17 +83,17 @@
 +include Makefile.feature
  endif
  
- LIBS = $(LIBBPF) -lelf -lz
-@@ -225,7 +219,7 @@
- $(OUTPUT)%.bpf.o: skeleton/%.bpf.c $(OUTPUT)vmlinux.h $(LIBBPF_BOOTSTRAP)
- 	$(QUIET_CLANG)$(CLANG) \
+ LIBS = $(LIBBPF) -lelf $(CRYPTO_LIBS) -lz
+@@ -263,7 +257,7 @@
+ 		-Wno-microsoft-anon-tag \
+ 		-fms-extensions \
  		-I$(or $(OUTPUT),.) \
 -		-I$(srctree)/tools/include/uapi/ \
 +		-I$(srctree)/include/uapi/ \
  		-I$(LIBBPF_BOOTSTRAP_INCLUDE) \
  		-g -O2 -Wall -fno-stack-protector \
  		--target=bpf -c $< -o $@
-@@ -243,7 +237,7 @@
+@@ -281,7 +275,7 @@
  
  CFLAGS += $(if $(BUILD_BPF_SKELS),,-DBPFTOOL_WITHOUT_SKELETONS)
  
@@ -102,7 +102,7 @@
  	$(QUIET_CC)$(CC) $(CFLAGS) -c -MMD $< -o $@
  
  $(BPFTOOL_BOOTSTRAP): $(BOOTSTRAP_OBJS) $(LIBBPF_BOOTSTRAP)
-@@ -262,7 +256,7 @@
+@@ -300,7 +294,7 @@
  	$(call QUIET_CLEAN, feature-detect)
  	$(Q)$(MAKE) -C $(srctree)/tools/build/feature/ clean >/dev/null
  
@@ -111,7 +111,7 @@
  	$(call QUIET_CLEAN, bpftool)
  	$(Q)$(RM) -- $(OUTPUT)bpftool $(OUTPUT)*.o $(OUTPUT)*.d
  	$(Q)$(RM) -- $(OUTPUT)*.skel.h $(OUTPUT)vmlinux.h
-@@ -278,7 +272,7 @@
+@@ -316,7 +310,7 @@
  
  install: install-bin
  	$(Q)$(INSTALL) -m 0755 -d $(DESTDIR)$(bash_compdir)
@@ -120,7 +120,7 @@
  
  uninstall:
  	$(call QUIET_UNINST, bpftool)
-@@ -286,16 +280,16 @@
+@@ -324,16 +318,16 @@
  	$(Q)$(RM) -- $(DESTDIR)$(bash_compdir)/bpftool
  
  doc:
