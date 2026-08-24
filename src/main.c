@@ -370,14 +370,14 @@ static int do_batch(int argc, char **argv)
 		if (!fgets(buf, sizeof(buf), fp))
 			break;
 
-		cp = strchr(buf, '#');
-		if (cp)
-			*cp = '\0';
-
 		if (strlen(buf) == sizeof(buf) - 1) {
 			errno = E2BIG;
 			break;
 		}
+
+		cp = strchr(buf, '#');
+		if (cp)
+			*cp = '\0';
 
 		/* Append continuation lines if any (coming after a line ending
 		 * with '\' in the batch file).
@@ -391,15 +391,15 @@ static int do_batch(int argc, char **argv)
 				goto err_close;
 			}
 
-			cp = strchr(contline, '#');
-			if (cp)
-				*cp = '\0';
-
 			if (strlen(buf) + strlen(contline) + 1 > sizeof(buf)) {
 				p_err("command %u is too long", lines);
 				err = -1;
 				goto err_close;
 			}
+
+			cp = strchr(contline, '#');
+			if (cp)
+				*cp = '\0';
 			buf[strlen(buf) - 2] = '\0';
 			strcat(buf, contline);
 		}
