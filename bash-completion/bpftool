@@ -1064,7 +1064,6 @@ _bpftool()
                 attach|detach)
                     local BPFTOOL_CGROUP_ATTACH_TYPES="$(bpftool feature list_builtins attach_types 2>/dev/null | \
                         grep '^cgroup_')"
-                    local ATTACH_FLAGS='multi override'
                     # Check for $prev = $command first
                     if [ $prev = $command ]; then
                         _filedir
@@ -1094,7 +1093,8 @@ _bpftool()
                                 # "id|pinned|tag|name" (we already checked for
                                 # that). This should only leave the case when
                                 # we need attach flags for "attach" commamnd.
-                                _bpftool_one_of_list "$ATTACH_FLAGS"
+                                _bpftool_one_of_list 'multi override'
+                                _bpftool_once_attr 'preorder'
                             fi
                             return 0
                             ;;
