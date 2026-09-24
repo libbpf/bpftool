@@ -350,7 +350,10 @@ void print_bpf_insn(const struct bpf_insn_cbs *cbs,
 		if (opcode == BPF_CALL) {
 			char tmp[64];
 
-			if (insn->src_reg == BPF_PSEUDO_CALL) {
+			if (BPF_SRC(insn->code) == BPF_X) {
+				verbose(cbs->private_data, "(%02x) callx r%d",
+					insn->code, insn->dst_reg);
+			} else if (insn->src_reg == BPF_PSEUDO_CALL) {
 				verbose(cbs->private_data, "(%02x) call pc%s",
 					insn->code,
 					__func_get_name(cbs, insn,
