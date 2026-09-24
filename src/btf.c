@@ -1545,7 +1545,7 @@ static int do_help(int argc, char **argv)
 		"       " HELP_SPEC_MAP "\n"
 		"       " HELP_SPEC_PROGRAM "\n"
 		"       " HELP_SPEC_OPTIONS " |\n"
-		"                    {-B|--base-btf} }\n"
+		"                    {[{-B|--base-btf} FILE]... }}\n"
 		"",
 		bin_name, "btf");
 

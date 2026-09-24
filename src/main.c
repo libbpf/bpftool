@@ -466,6 +466,7 @@ int main(int argc, char **argv)
 		{ "base-btf",	required_argument, NULL, 'B' },
 		{ 0 }
 	};
+	struct btf *new_base_btf = NULL, *root_base_btf = NULL;
 	bool version_requested = false;
 	int opt, ret;
 
@@ -515,12 +516,16 @@ int main(int argc, char **argv)
 			verifier_logs = true;
 			break;
 		case 'B':
-			base_btf = btf__parse(optarg, NULL);
-			if (!base_btf) {
+			/* handle multi-split BTF */
+			new_base_btf = btf__parse_split(optarg, base_btf);
+			if (!new_base_btf) {
 				p_err("failed to parse base BTF at '%s': %d\n",
 				      optarg, -errno);
 				return -1;
 			}
+			base_btf = new_base_btf;
+			if (!root_base_btf)
+				root_base_btf = base_btf;
 			break;
 		case 'L':
 			use_loader = true;
@@ -567,7 +572,20 @@ int main(int argc, char **argv)
 	if (json_output)
 		jsonw_destroy(&json_wtr);
 
-	btf__free(base_btf);
+	while (base_btf) {
+		bool is_root = base_btf == root_base_btf;
+
+		new_base_btf = (struct btf *)btf__base_btf(base_btf);
+		btf__free(base_btf);
+		/*
+		 * Do not free base BTF that is an owned .BTF.base ; leads
+		 * to a double-free, so only free as far as the root base
+		 * we explicitly read with -B above.
+		 */
+		if (is_root)
+			break;
+		base_btf = new_base_btf;
+	}
 
 	return ret;
 }
