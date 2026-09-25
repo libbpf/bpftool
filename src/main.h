@@ -89,6 +89,7 @@ extern bool block_mount;
 extern bool verifier_logs;
 extern bool relaxed_maps;
 extern bool use_loader;
+extern bool wait_output;
 extern struct btf *base_btf;
 extern struct hashmap *refs_table;
 extern bool sign_progs;

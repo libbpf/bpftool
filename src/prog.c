@@ -1119,21 +1119,66 @@ enum prog_tracelog_mode {
 	TRACE_STDERR,
 };
 
+static void exit_stream(int signo)
+{
+	exit(0);
+}
+
+/* Consumes prog_fd. */
 static int
 prog_tracelog_stream(int prog_fd, enum prog_tracelog_mode mode)
 {
+	const struct sigaction act = { .sa_handler = exit_stream };
+	const int signals[] = { SIGHUP, SIGINT, SIGTERM };
 	FILE *file = mode == TRACE_STDOUT ? stdout : stderr;
 	int stream_id = mode == TRACE_STDOUT ? 1 : 2;
 	char buf[512];
-	int ret;
+	unsigned int i;
+	int fd, ret;
 
-	ret = 0;
-	do {
-		ret = bpf_prog_stream_read(prog_fd, stream_id, buf, sizeof(buf), NULL);
-		if (ret > 0)
-			fwrite(buf, sizeof(buf[0]), ret, file);
-	} while (ret > 0);
+	if (!wait_output) {
+		do {
+			ret = bpf_prog_stream_read(prog_fd, stream_id, buf, sizeof(buf), NULL);
+			if (ret > 0)
+				fwrite(buf, sizeof(buf[0]), ret, file);
+		} while (ret > 0);
+		if (ret < 0)
+			p_err("failed to read stream: %s", strerror(-ret));
+		close(prog_fd);
+		goto out;
+	}
 
+	fd = bpf_prog_stream_open(prog_fd, stream_id, NULL);
+	/*
+	 * The stream descriptor does not keep the program alive. Drop the
+	 * program reference so that reads return EOF once the program is gone.
+	 */
+	close(prog_fd);
+	if (fd == -EINVAL) {
+		/* The bpf() syscall rejects unknown commands with EINVAL. */
+		p_err("waiting for stream output is not supported by this kernel");
+		return -1;
+	}
+	if (fd < 0) {
+		p_err("failed to open stream: %s", strerror(-fd));
+		return -1;
+	}
+
+	/*
+	 * Exit from the handler like the trace pipe variant does. A flag checked
+	 * between reads would miss a signal that lands before read() blocks and
+	 * only end the loop at the next print.
+	 */
+	for (i = 0; i < ARRAY_SIZE(signals); i++)
+		sigaction(signals[i], &act, NULL);
+	while ((ret = read(fd, buf, sizeof(buf))) > 0) {
+		fwrite(buf, sizeof(buf[0]), ret, file);
+		fflush(file);
+	}
+	if (ret < 0)
+		p_err("failed to read stream: %s", strerror(errno));
+	close(fd);
+out:
 	fflush(file);
 	return ret ? -1 : 0;
 }
@@ -2659,7 +2704,8 @@ static int do_help(int argc, char **argv)
 		"       METRIC := { cycles | instructions | l1d_loads | llc_misses | itlb_misses | dtlb_misses }\n"
 		"       " HELP_SPEC_OPTIONS " |\n"
 		"                    {-f|--bpffs} | {-m|--mapcompat} | {-n|--nomount} |\n"
-		"                    {-L|--use-loader} | [ {-S|--sign } {-k} <private_key.pem> {-i} <certificate.x509> ] \n"
+		"                    {-L|--use-loader} | [ {-S|--sign } {-k} <private_key.pem> {-i} <certificate.x509> ] |\n"
+		"                    {-w|--wait} }\n"
 		"",
 		bin_name, argv[-2]);
 

@@ -31,6 +31,7 @@ bool block_mount;
 bool verifier_logs;
 bool relaxed_maps;
 bool use_loader;
+bool wait_output;
 struct btf *base_btf;
 struct hashmap *refs_table;
 bool sign_progs;
@@ -462,6 +463,7 @@ int main(int argc, char **argv)
 		{ "nomount",	no_argument,	NULL,	'n' },
 		{ "debug",	no_argument,	NULL,	'd' },
 		{ "use-loader",	no_argument,	NULL,	'L' },
+		{ "wait",	no_argument,	NULL,	'w' },
 		{ "sign",	no_argument,	NULL,	'S' },
 		{ "base-btf",	required_argument, NULL, 'B' },
 		{ 0 }
@@ -480,7 +482,7 @@ int main(int argc, char **argv)
 	bin_name = "bpftool";
 
 	opterr = 0;
-	while ((opt = getopt_long(argc, argv, "VhpjfLmndSi:k:B:l",
+	while ((opt = getopt_long(argc, argv, "VhpjfLmndSi:k:B:lw",
 				  options, NULL)) >= 0) {
 		switch (opt) {
 		case 'V':
@@ -529,6 +531,9 @@ int main(int argc, char **argv)
 			break;
 		case 'L':
 			use_loader = true;
+			break;
+		case 'w':
+			wait_output = true;
 			break;
 		case 'S':
 			sign_progs = true;
