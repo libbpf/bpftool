@@ -18,7 +18,8 @@ SYNOPSIS
 
 *OPTIONS* := { |COMMON_OPTIONS| |
 { **-f** | **--bpffs** } | { **-m** | **--mapcompat** } | { **-n** | **--nomount** } |
-{ **-L** | **--use-loader** } | [ { **-S** | **--sign** } **-k** <private_key.pem> **-i** <certificate.x509> ] }
+{ **-L** | **--use-loader** } | [ { **-S** | **--sign** } **-k** <private_key.pem> **-i** <certificate.x509> ] |
+{ **-w** | **--wait** } }
 
 *COMMANDS* :=
 { **show** | **list** | **dump xlated** | **dump jited** | **pin** | **load** |
@@ -186,6 +187,11 @@ bpftool prog tracelog { stdout | stderr } *PROG*
     error messages to the standard error stream. This facility should be used
     only for debugging purposes.
 
+    By default, bpftool prints the output buffered so far and exits. With
+    **-w** or **--wait**, it keeps printing new output as the program produces
+    it, until the program is unloaded or <Ctrl+C> is hit. Waiting requires a
+    kernel that supports opening a stream as a file descriptor.
+
 bpftool prog run *PROG* data_in *FILE* [data_out *FILE* [data_size_out *L*]] [ctx_in *FILE* [ctx_out *FILE* [ctx_size_out *M*]]] [repeat *N*]
     Run BPF program *PROG* in the kernel testing infrastructure for BPF,
     meaning that the program works on the data and context provided by the
@@ -266,6 +272,10 @@ OPTIONS
 -i <certificate.x509>
     Path to the X.509 certificate file in PEM or DER format, required when
     signing.
+
+-w, --wait
+    When dumping a program stream with **bpftool prog tracelog**, wait for new
+    output instead of exiting once the buffered output has been printed.
 
 EXAMPLES
 ========
