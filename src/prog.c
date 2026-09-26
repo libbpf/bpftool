@@ -1121,7 +1121,7 @@ enum prog_tracelog_mode {
 
 static void exit_stream(int signo)
 {
-	exit(0);
+	_exit(0);
 }
 
 /* Consumes prog_fd. */

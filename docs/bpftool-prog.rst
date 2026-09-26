@@ -190,7 +190,8 @@ bpftool prog tracelog { stdout | stderr } *PROG*
     By default, bpftool prints the output buffered so far and exits. With
     **-w** or **--wait**, it keeps printing new output as the program produces
     it, until the program is unloaded or <Ctrl+C> is hit. Waiting requires a
-    kernel that supports opening a stream as a file descriptor.
+    kernel that supports opening a stream as a file descriptor, introduced
+    upstream in Linux 7.4.
 
 bpftool prog run *PROG* data_in *FILE* [data_out *FILE* [data_size_out *L*]] [ctx_in *FILE* [ctx_out *FILE* [ctx_size_out *M*]]] [repeat *N*]
     Run BPF program *PROG* in the kernel testing infrastructure for BPF,
@@ -274,8 +275,9 @@ OPTIONS
     signing.
 
 -w, --wait
-    When dumping a program stream with **bpftool prog tracelog**, wait for new
-    output instead of exiting once the buffered output has been printed.
+    When dumping a program stream with **bpftool prog tracelog** { **stdout** |
+    **stderr** } *PROG*, wait for new output instead of exiting once the
+    buffered output has been printed.
 
 EXAMPLES
 ========
