@@ -150,6 +150,7 @@ static void btf_loc_param_raw_str(const struct btf_loc_param *p, __u32 vlen,
 
 static void btf_loc_param_str(const struct btf_type *t, char *str, size_t sz)
 {
+	const char *op = "", *prefix = "";
 	const struct btf_loc_param *p;
 	__u32 i = 0, vlen;
 	__u64 value;
@@ -157,7 +158,6 @@ static void btf_loc_param_str(const struct btf_type *t, char *str, size_t sz)
 	bool negative = false;
 	char regs[32] = {};
 	char num[32] = {};
-	const char *op = "";
 
 	if (!t || !btf_is_loc_param(t)) {
 		snprintf(str, sz, "<invalid>");
@@ -234,8 +234,12 @@ static void btf_loc_param_str(const struct btf_type *t, char *str, size_t sz)
 						(1ULL << bits) - value;
 			}
 		}
-		snprintf(num, sizeof(num), "0x%llx%s", (unsigned long long)value,
-			 p->flags & BTF_LOC_PARAM_ADDR ? " (addr)" : "");
+		if (p->flags & BTF_LOC_PARAM_ADDR)
+			prefix = "address ";
+		else if (p->flags & BTF_LOC_PARAM_CONST)
+			prefix = "const ";
+		snprintf(num, sizeof(num), "0x%llx",
+			 (unsigned long long)value);
 	}
 	if (i != vlen) {
 		btf_loc_param_raw_str(p, vlen, str, sz);
@@ -244,12 +248,109 @@ static void btf_loc_param_str(const struct btf_type *t, char *str, size_t sz)
 	if (num[0])
 		op = regs[0] ? (negative ? " - " : " + ") : negative ? "-" : "";
 
-	snprintf(str, sz, "%s%s%s%s%s",
+	snprintf(str, sz, "%s%s%s%s%s%s",
 		 p->flags & BTF_LOC_PARAM_DEREF ? "*(" : "",
+		 prefix,
 		 regs,
 		 op,
 		 num,
 		 p->flags & BTF_LOC_PARAM_DEREF ? ")" : "");
+}
+
+static bool btf_locsec_append(char *str, size_t sz, size_t *off,
+			      const char *suffix)
+{
+	static const char nospace_suffix[] = "...";
+	bool space_left = true;
+	size_t left = 0, len;
+
+	if (*off >= sz || sz < sizeof(nospace_suffix))
+		return false;
+	left = sz - *off;
+
+	/*
+	 * Copy as much of the string as we can in remaining space, and
+	 * append "..." if we would have overrun.
+	 */
+	len = strlen(suffix) + 1;
+	if (len > left) {
+		len = left;
+		space_left = false;
+	}
+
+	memcpy(str + *off, suffix, len);
+	*off += len - 1;
+
+	if (!space_left)
+		memcpy(str + sz - sizeof(nospace_suffix), nospace_suffix, sizeof(nospace_suffix));
+
+	return space_left;
+}
+
+static void btf_locsec_func_str(const struct btf *btf,
+				const struct btf_loc *loc, char *str, size_t sz)
+{
+	const struct btf_type *func, *func_proto, *loc_proto;
+	const struct btf_param *params;
+	const __u32 *loc_params;
+	const char *name;
+	__u32 i, vlen;
+	size_t off = 0;
+
+	if (!sz)
+		return;
+
+	str[0] = '\0';
+	func = btf__type_by_id(btf, loc->func);
+	if (!func || !btf_is_func(func))
+		goto invalid;
+
+	name = btf_str(btf, func->name_off);
+	func_proto = btf__type_by_id(btf, func->type);
+	loc_proto = btf__type_by_id(btf, loc->loc_proto);
+	if (!func_proto || !btf_is_func_proto(func_proto) ||
+	    !loc_proto || !btf_is_loc_proto(loc_proto) ||
+	    btf_vlen(func_proto) != btf_vlen(loc_proto))
+		goto invalid;
+
+	params = (const void *)(func_proto + 1);
+	loc_params = btf_loc_proto_params(loc_proto);
+	vlen = btf_vlen(func_proto);
+	if (!btf_locsec_append(str, sz, &off, name) ||
+	    !btf_locsec_append(str, sz, &off, "("))
+		return;
+	for (i = 0; i < vlen; i++) {
+		const struct btf_type *param_loc;
+		char param_str[256] = {};
+
+		if (!params[i].type) {
+			/* Handle varargs func proto, must be last parameter */
+			if (i != vlen - 1)
+				goto invalid;
+			if (!btf_locsec_append(str, sz, &off, i ? ", " : "") ||
+			    !btf_locsec_append(str, sz, &off, "..."))
+				return;
+			break;
+		} else if (loc_params[i]) {
+			param_loc = btf__type_by_id(btf, loc_params[i]);
+			btf_loc_param_str(param_loc, param_str, sizeof(param_str));
+		} else {
+			snprintf(param_str, sizeof(param_str), "<unavailable>");
+		}
+
+		if (!btf_locsec_append(str, sz, &off, i ? ", " : "") ||
+		    !btf_locsec_append(str, sz, &off,
+				       btf_str(btf, params[i].name_off)) ||
+		    !btf_locsec_append(str, sz, &off, " [") ||
+		    !btf_locsec_append(str, sz, &off, param_str) ||
+		    !btf_locsec_append(str, sz, &off, "]"))
+			return;
+	}
+	(void) btf_locsec_append(str, sz, &off, ")");
+	return;
+
+invalid:
+	snprintf(str, sz, "<invalid>");
 }
 
 static int dump_btf_type(const struct btf *btf, __u32 id,
@@ -617,22 +718,26 @@ static int dump_btf_type(const struct btf *btf, __u32 id,
 		}
 
 		for (i = 0; i < vlen; i++, locs++) {
-			const struct btf_type *f = btf__type_by_id(btf, locs->func);
+			const struct btf_type *func;
 			const char *name = "<invalid>";
+			char func_str[1024] = {};
 
-			if (f && btf_is_func(f))
-				name = btf_str(btf, f->name_off);
+			func = btf__type_by_id(btf, locs->func);
+			if (func && btf_is_func(func))
+				name = btf_str(btf, func->name_off);
+			btf_locsec_func_str(btf, locs, func_str, sizeof(func_str));
 
 			if (json_output) {
 				jsonw_start_object(w);
 				jsonw_uint_field(w, "func_type_id", locs->func);
 				jsonw_string_field(w, "name", name);
+				jsonw_string_field(w, "func", func_str);
 				jsonw_uint_field(w, "loc_proto_type_id", locs->loc_proto);
 				jsonw_uint_field(w, "offset", locs->offset);
 				jsonw_end_object(w);
 			} else {
-				printf("\n\tname='%s' func_type_id=%u loc_proto_type_id=%u offset=%u",
-				       name, locs->func, locs->loc_proto, locs->offset);
+				printf("\n\tfunc='%s' func_type_id=%u loc_proto_type_id=%u offset=%u",
+				       func_str, locs->func, locs->loc_proto, locs->offset);
 			}
 		}
 		if (json_output)
