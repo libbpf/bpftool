@@ -348,7 +348,7 @@ static void show_prog_metadata(int fd, __u32 num_maps)
 			t_var = btf__type_by_id(btf, vsi->type);
 			name = btf__name_by_offset(btf, t_var->name_off);
 
-			if (!has_metadata_prefix(name))
+			if (!has_metadata_prefix(name) || btf_var_is_piece(btf, vsi))
 				continue;
 
 			if (!printed_header) {
@@ -377,7 +377,7 @@ static void show_prog_metadata(int fd, __u32 num_maps)
 			t_var = btf__type_by_id(btf, vsi->type);
 			name = btf__name_by_offset(btf, t_var->name_off);
 
-			if (!has_metadata_prefix(name))
+			if (!has_metadata_prefix(name) || btf_var_is_piece(btf, vsi))
 				continue;
 
 			if (!printed_header) {
