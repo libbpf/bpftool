@@ -121,6 +121,7 @@ struct obj_refs {
 };
 
 struct btf;
+struct btf_var_secinfo;
 struct bpf_line_info;
 
 int build_pinned_obj_table(struct hashmap *table,
@@ -239,6 +240,7 @@ int btf_dumper_type(const struct btf_dumper *d, __u32 type_id,
 		    const void *data);
 void btf_dumper_type_only(const struct btf *btf, __u32 func_type_id,
 			  char *func_only, int size);
+bool btf_var_is_piece(const struct btf *btf, const struct btf_var_secinfo *vsi);
 
 void btf_dump_linfo_plain(const struct btf *btf,
 			  const struct bpf_line_info *linfo,
