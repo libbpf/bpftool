@@ -145,6 +145,7 @@ jobs:
     name: Create a draft release
     runs-on: ubuntu-22.04
     needs: [build]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     permissions:
       contents: write
     steps:
