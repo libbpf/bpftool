@@ -132,8 +132,22 @@ $ cd src
 $ EXTRA_LDFLAGS=-static make
 ```
 
-Note that to use the LLVM disassembler with static builds, we need a static
-version of the LLVM library installed on the system:
+The LLVM disassembler used for `bpftool prog dump jited` is built as a separate
+plugin, at `$(libdir)/bpftool/bpftool-llvm.so`. This keeps the base bpftool free
+of the (large) libLLVM dependency.
+
+The plugin path is baked into `bpftool` at build time, so pass the same `libdir`
+to both `make` and `make install`. Otherwise `bpftool` looks for the plugin at
+`/usr/local/lib/bpftool/bpftool-llvm.so`.
+
+There are two independent static-linking knobs:
+
+- `EXTRA_LDFLAGS=-static` makes the `bpftool` binary itself static. The plugin
+  is unaffected and stays a shared object.
+- `LLVM_LINK_STATIC=1` links libLLVM into the plugin statically. This is also
+  done automatically when the LLVM installation ships only static libraries.
+
+To embed a static libLLVM into the plugin, build LLVM statically first:
 
 1.  Download a precompiled LLVM release or build it locally.
 
@@ -156,12 +170,13 @@ version of the LLVM library installed on the system:
       $ make -j -C llvm_build llvm-config llvm-libraries
       ```
 
-2.  Build bpftool with `EXTRA_LDFLAGS` set to `-static`, and by passing the
-    path to the relevant `llvm-config`.
+2.  Build bpftool with `LLVM_LINK_STATIC=1`, passing the path to the relevant
+    `llvm-config` and the `libdir` the plugin will be installed under (add
+    `EXTRA_LDFLAGS=-static` too if you also want a static `bpftool` binary).
 
     ```console
     $ cd bpftool
-    $ LLVM_CONFIG=../../llvm_build/bin/llvm-config EXTRA_LDFLAGS=-static make -j -C src
+    $ LLVM_CONFIG=../../llvm_build/bin/llvm-config LLVM_LINK_STATIC=1 libdir=/usr/lib make -j -C src
     ```
 
 ### Build bpftool's man pages

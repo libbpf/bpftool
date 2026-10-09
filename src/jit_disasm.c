@@ -25,10 +25,9 @@
 #include <bpf/libbpf.h>
 
 #ifdef HAVE_LLVM_SUPPORT
-#include <llvm-c/Core.h>
-#include <llvm-c/Disassembler.h>
-#include <llvm-c/Target.h>
-#include <llvm-c/TargetMachine.h>
+#include <dlfcn.h>
+
+#include "llvm_disasm.h"
 #endif
 
 #ifdef HAVE_LIBBFD_SUPPORT
@@ -45,7 +44,32 @@ static int oper_count;
 #ifdef HAVE_LLVM_SUPPORT
 #define DISASM_SPACER
 
-typedef LLVMDisasmContextRef disasm_ctx_t;
+/*
+ * The libLLVM-based disassembler used for "bpftool prog dump jited" lives in a
+ * separate plugin, bpftool-llvm.so, which is the only object linked against
+ * libLLVM. This keeps the bpftool binary itself free of a hard dependency on
+ * the (large) libLLVM shared object: the plugin is loaded lazily with dlopen()
+ * the first time a JITed image actually needs to be disassembled, with its
+ * entry points resolved by dlsym(). See llvm_disasm.c for the plugin.
+ *
+ * LLVM_PLUGIN_DIR is the install directory baked in at build time
+ * ($(libdir)/bpftool). When set, the plugin is loaded from that absolute
+ * location; otherwise only the bare file name is used, i.e. the plugin is
+ * looked up via the dynamic linker search path (or the current directory).
+ */
+#ifdef LLVM_PLUGIN_DIR
+#define LLVM_PLUGIN_PATH LLVM_PLUGIN_DIR "/bpftool-llvm.so"
+#else
+#define LLVM_PLUGIN_PATH "bpftool-llvm.so"
+#endif
+
+typedef void *disasm_ctx_t;
+
+static void *llvm_plugin_handle;
+static __typeof__(&bpftool_llvm_init) p_bpftool_llvm_init;
+static __typeof__(&bpftool_llvm_create_context) p_bpftool_llvm_create_context;
+static __typeof__(&bpftool_llvm_destroy_context) p_bpftool_llvm_destroy_context;
+static __typeof__(&bpftool_llvm_disassemble) p_bpftool_llvm_disassemble;
 
 static int printf_json(char *s)
 {
@@ -63,48 +87,13 @@ static int printf_json(char *s)
 	return 0;
 }
 
-/* This callback to set the ref_type is necessary to have the LLVM disassembler
- * print PC-relative addresses instead of byte offsets for branch instruction
- * targets.
- */
-static const char *
-symbol_lookup_callback(__maybe_unused void *disasm_info,
-		       __maybe_unused uint64_t ref_value,
-		       uint64_t *ref_type, __maybe_unused uint64_t ref_PC,
-		       __maybe_unused const char **ref_name)
-{
-	*ref_type = LLVMDisassembler_ReferenceType_InOut_None;
-	return NULL;
-}
-
 static int
 init_context(disasm_ctx_t *ctx, const char *arch,
 	     __maybe_unused const char *disassembler_options,
 	     __maybe_unused unsigned char *image, __maybe_unused ssize_t len,
 	     __maybe_unused __u64 func_ksym)
 {
-	char *triple;
-
-	if (arch)
-		triple = LLVMNormalizeTargetTriple(arch);
-	else
-		triple = LLVMGetDefaultTargetTriple();
-	if (!triple) {
-		p_err("Failed to retrieve triple");
-		return -1;
-	}
-
-	/*
-	 * Enable all aarch64 ISA extensions so the disassembler can handle any
-	 * instruction the kernel JIT might emit (e.g. ARM64 LSE atomics).
-	 */
-	if (!strncmp(triple, "aarch64", 7))
-		*ctx = LLVMCreateDisasmCPUFeatures(triple, "", "+all", NULL, 0, NULL,
-						   symbol_lookup_callback);
-	else
-		*ctx = LLVMCreateDisasm(triple, NULL, 0, NULL, symbol_lookup_callback);
-	LLVMDisposeMessage(triple);
-
+	*ctx = p_bpftool_llvm_create_context(arch);
 	if (!*ctx) {
 		p_err("Failed to create disassembler");
 		return -1;
@@ -115,7 +104,7 @@ init_context(disasm_ctx_t *ctx, const char *arch,
 
 static void destroy_context(disasm_ctx_t *ctx)
 {
-	LLVMDisposeMessage(*ctx);
+	p_bpftool_llvm_destroy_context(*ctx);
 }
 
 static int
@@ -125,8 +114,8 @@ disassemble_insn(disasm_ctx_t *ctx, unsigned char *image, ssize_t len, int pc,
 	char buf[256];
 	int count;
 
-	count = LLVMDisasmInstruction(*ctx, image + pc, len - pc, func_ksym + pc,
-				      buf, sizeof(buf));
+	count = p_bpftool_llvm_disassemble(*ctx, image, len, pc, func_ksym,
+					   buf, sizeof(buf));
 	if (json_output)
 		printf_json(buf);
 	else
@@ -137,10 +126,37 @@ disassemble_insn(disasm_ctx_t *ctx, unsigned char *image, ssize_t len, int pc,
 
 int disasm_init(void)
 {
-	LLVMInitializeAllTargetInfos();
-	LLVMInitializeAllTargetMCs();
-	LLVMInitializeAllDisassemblers();
-	return 0;
+	if (llvm_plugin_handle)
+		return p_bpftool_llvm_init();
+
+	/* Load the plugin by its absolute install path. */
+	llvm_plugin_handle = dlopen(LLVM_PLUGIN_PATH, RTLD_NOW | RTLD_LOCAL);
+	if (!llvm_plugin_handle) {
+		p_err("failed to load %s, install it to disassemble JITed programs: %s",
+		      LLVM_PLUGIN_PATH, dlerror());
+		return -1;
+	}
+
+#define RESOLVE(name)							       \
+	do {								       \
+		p_##name = (__typeof__(p_##name))dlsym(llvm_plugin_handle,     \
+						       #name);		       \
+		if (!p_##name) {					       \
+			p_err("%s is missing symbol %s: %s",		       \
+			      LLVM_PLUGIN_PATH, #name, dlerror());	       \
+			dlclose(llvm_plugin_handle);			       \
+			llvm_plugin_handle = NULL;			       \
+			return -1;					       \
+		}							       \
+	} while (0)
+
+	RESOLVE(bpftool_llvm_init);
+	RESOLVE(bpftool_llvm_create_context);
+	RESOLVE(bpftool_llvm_destroy_context);
+	RESOLVE(bpftool_llvm_disassemble);
+#undef RESOLVE
+
+	return p_bpftool_llvm_init();
 }
 #endif /* HAVE_LLVM_SUPPORT */
 
