@@ -10,6 +10,11 @@
 #include <asm/types.h>
 #include <asm/posix_types.h>
 
+#ifdef __SIZEOF_INT128__
+typedef unsigned __int128 __u128 __attribute__((aligned(16)));
+typedef __u128 u128;
+#endif
+
 typedef uint64_t u64;
 typedef __u32 u32;
 typedef __u16 u16;
