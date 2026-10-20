@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
 include Makefile.include
 
+# Setting BPFTOOL_VERSION in the Makefile is not usually necessary given that
+# we build it from libbpf's version number in main.c, but it is required to set
+# the patch version.
+# Remove once libbpf has bumped its minor version number.
+BPFTOOL_VERSION := 7.8.1
+
 ifeq ($(srctree),)
 srctree := $(patsubst %/,%,$(dir $(CURDIR)))
 endif
