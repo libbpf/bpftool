@@ -383,7 +383,7 @@ static void cfg_destroy(struct cfg *cfg)
 
 static void
 draw_bb_node(struct func_node *func, struct bb_node *bb, struct dump_data *dd,
-	     bool opcodes, bool linum)
+	     struct bpf_insn *prog_start, bool opcodes, bool linum)
 {
 	const char *shape;
 
@@ -400,11 +400,11 @@ draw_bb_node(struct func_node *func, struct bb_node *bb, struct dump_data *dd,
 	} else if (bb->idx == EXIT_BLOCK_INDEX) {
 		printf("EXIT");
 	} else {
-		unsigned int start_idx;
+		unsigned int start_idx = bb->head - func->start;
+
 		printf("{\\\n");
-		start_idx = bb->head - func->start;
 		dump_xlated_for_graph(dd, bb->head, bb->tail, start_idx,
-				      opcodes, linum);
+				      prog_start, opcodes, linum);
 		printf("}");
 	}
 
@@ -432,12 +432,12 @@ static void draw_bb_succ_edges(struct func_node *func, struct bb_node *bb)
 
 static void
 func_output_bb_def(struct func_node *func, struct dump_data *dd,
-		   bool opcodes, bool linum)
+		   struct bpf_insn *prog_start, bool opcodes, bool linum)
 {
 	struct bb_node *bb;
 
 	list_for_each_entry(bb, &func->bbs, l) {
-		draw_bb_node(func, bb, dd, opcodes, linum);
+		draw_bb_node(func, bb, dd, prog_start, opcodes, linum);
 	}
 }
 
@@ -458,7 +458,8 @@ static void func_output_edges(struct func_node *func)
 }
 
 static void
-cfg_dump(struct cfg *cfg, struct dump_data *dd, bool opcodes, bool linum)
+cfg_dump(struct cfg *cfg, struct dump_data *dd, struct bpf_insn *prog_start,
+	 bool opcodes, bool linum)
 {
 	struct func_node *func;
 
@@ -466,7 +467,7 @@ cfg_dump(struct cfg *cfg, struct dump_data *dd, bool opcodes, bool linum)
 	list_for_each_entry(func, &cfg->funcs, l) {
 		printf("subgraph \"cluster_%d\" {\n\tstyle=\"dashed\";\n\tcolor=\"black\";\n\tlabel=\"func_%d ()\";\n",
 		       func->idx, func->idx);
-		func_output_bb_def(func, dd, opcodes, linum);
+		func_output_bb_def(func, dd, prog_start, opcodes, linum);
 		func_output_edges(func);
 		printf("}\n");
 	}
@@ -483,7 +484,7 @@ void dump_xlated_cfg(struct dump_data *dd, void *buf, unsigned int len,
 	if (cfg_build(&cfg, insn, len))
 		return;
 
-	cfg_dump(&cfg, dd, opcodes, linum);
+	cfg_dump(&cfg, dd, insn, opcodes, linum);
 
 	cfg_destroy(&cfg);
 }
