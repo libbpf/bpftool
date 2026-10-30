@@ -482,7 +482,7 @@ static int dump_btf_type(const struct btf *btf, __u32 id,
 				if (btf_kflag(t))
 					jsonw_int_field(w, "val", v->val);
 				else
-					jsonw_uint_field(w, "val", v->val);
+					jsonw_uint_field(w, "val", (__u32)v->val);
 				jsonw_end_object(w);
 			} else {
 				if (btf_kflag(t))
