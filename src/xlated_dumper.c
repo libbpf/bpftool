@@ -353,7 +353,7 @@ void dump_xlated_plain(struct dump_data *dd, void *buf, unsigned int len,
 }
 
 void dump_xlated_for_graph(struct dump_data *dd, void *buf_start, void *buf_end,
-			   unsigned int start_idx,
+			   unsigned int start_idx, struct bpf_insn *prog_start,
 			   bool opcodes, bool linum)
 {
 	const struct bpf_insn_cbs cbs = {
@@ -374,6 +374,7 @@ void dump_xlated_for_graph(struct dump_data *dd, void *buf_start, void *buf_end,
 
 	for (; cur <= insn_end; cur++) {
 		unsigned int insn_off;
+		unsigned int linfo_offset;
 
 		if (double_insn) {
 			double_insn = false;
@@ -381,7 +382,8 @@ void dump_xlated_for_graph(struct dump_data *dd, void *buf_start, void *buf_end,
 		}
 		double_insn = cur->code == (BPF_LD | BPF_IMM | BPF_DW);
 
-		insn_off = (unsigned int)(cur - insn_start + start_idx);
+		insn_off = (unsigned int)(cur - insn_start) + start_idx;
+		linfo_offset = (unsigned int)(cur - prog_start);
 		if (btf && record) {
 			if (record->insn_off == insn_off) {
 				btf_dumper_type_only(btf, record->type_id,
@@ -396,14 +398,14 @@ void dump_xlated_for_graph(struct dump_data *dd, void *buf_start, void *buf_end,
 		if (prog_linfo) {
 			const struct bpf_line_info *linfo;
 
-			linfo = bpf_prog_linfo__lfind(prog_linfo, insn_off, 0);
+			linfo = bpf_prog_linfo__lfind(prog_linfo, linfo_offset, 0);
 			if (linfo && linfo != last_linfo) {
 				btf_dump_linfo_dotlabel(btf, linfo, linum);
 				last_linfo = linfo;
 			}
 		}
 
-		printf("%u: ", insn_off);
+		printf("%u: ", linfo_offset);
 		print_bpf_insn(&cbs, cur, true);
 		printf("\\l\\\n");
 
